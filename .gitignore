@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# env
+Beta-2-env
+
+# Data folder
+data/
+
+# .DS_Store
+.DS_Store
