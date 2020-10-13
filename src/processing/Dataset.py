@@ -63,8 +63,8 @@ class Dataset():
     def save(self):
         pass
 
-    def transform(self, transforms):
-        for transform in transforms:
+    def transform(self):
+        for transform in self.transforms:
             self.datasets = transform(self.datasets)
 
     def add_feature(self, feature_name:str, feature:pd.Series, names=None):
@@ -113,8 +113,8 @@ class Dataset():
 
     def __init_transforms__(self):
         """
-        Checks that user set transforms exist as files in the transform folder
-        If it exists it then loads and initializes the transform
+        Checks that user-set transforms exist as files in the transform folder
+        If it exists it then load and initializes the transform
         :return:
         """
         transform_files = os.listdir(self.__transform_dir__)
@@ -125,12 +125,9 @@ class Dataset():
         transforms = []
         for user_transform in user_transform_files:
             if f'{user_transform}.py' in transform_files:
-                loc = '../lib/transforms'
-                plugin = importlib.import_module(f'../lib/transforms.{user_transform}', package='./transforms')
+                plugin = importlib.import_module(f'{user_transform}', package='../lib/transforms')
                 plugin = plugin.Transform(self.transform_config[user_transform])
                 transforms.append(plugin)
-
-        # TODO Check that all essential plugins exist in the transforms folder
 
         self.transforms = transforms
 
@@ -142,19 +139,25 @@ if __name__ == "__main__":
         'src':src,
         'transforms': {
             'merge_datasets':{
+                'name': 'beta-2-ag-ant',
                 'groups': [('B2in-ag', 'Z-ag', 'R-ag'), ('B2in-ant', 'Z-ant', 'R-ant')]
             },
             'test_transform':{
-
+                'test_arg': True
             }
         }
     }
 
     dataset = Dataset(config=config)
-    # dataset.load()
+    dataset.load()
+    dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
+    dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
+    dataset.transform()
+    a = 0
+
+
     # feature_ag = pd.Series([1] * dataset.len('R-ag'))
     # feature_ant = pd.Series([0] * dataset.len('R-ag'))
     #
-    # #dataset.add_feature(feature_name="target", feature=feature_ag, names=['R-ag'], )
-    # dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag'])
+    #dataset.add_feature(feature_name="target", feature=feature_ag, names=['R-ag'], )
     # a = 0
