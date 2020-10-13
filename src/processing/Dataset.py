@@ -67,7 +67,7 @@ class Dataset():
         for transform in self.transforms:
             self.datasets = transform(self.datasets)
 
-    def add_feature(self, feature_name:str, feature:pd.Series, names=None):
+    def add_feature(self, feature_name: str, feature: pd.Series, names=None):
         """
         :param feature_name: name of the column to add to pandas df
         :param feature: a pandas series of values to add as a column
@@ -86,7 +86,7 @@ class Dataset():
                     raise ValueError(f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
                 self.datasets[name]["data"][feature_name] = feature
 
-    def apply_item(self, feature_name:str, item, names=None):
+    def apply_item(self, feature_name: str, item, names=None):
         if names is None or len(names) == 0:
             # add to all datasets
             for name in self.datasets.keys():
@@ -96,8 +96,8 @@ class Dataset():
             for name in names:
                 self.datasets[name]["data"][feature_name] = pd.Series([item] * self.len(name))
 
-    def provide(self):
-        pass
+    def provide(self, name):
+        return self.datasets[name]["data"]
 
     def statistics(self):
         pass
@@ -136,14 +136,13 @@ if __name__ == "__main__":
     src = '../../data/raw/'
 
     config = {
-        'src':src,
+        'src': src,
         'transforms': {
             'merge_datasets':{
                 'name': 'beta-2-ag-ant',
-                'groups': [('B2in-ag', 'Z-ag', 'R-ag'), ('B2in-ant', 'Z-ant', 'R-ant')]
             },
-            'test_transform':{
-                'test_arg': True
+            'change_nans':{
+                'value': 0
             }
         }
     }
