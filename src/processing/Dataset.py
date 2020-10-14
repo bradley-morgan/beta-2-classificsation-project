@@ -2,6 +2,7 @@ import pandas as pd
 import os
 import importlib
 from src.utils.remove import remove
+from src.utils.set_path import path
 
 
 """
@@ -30,6 +31,7 @@ class Dataset():
         # User defined attributes
         self.src = config["src"]
         self.transform_config = config["transforms"]
+        self.y_labels = config["labels"]
 
 
         # default attributes
@@ -37,7 +39,7 @@ class Dataset():
         self.transforms = []
 
         # Hidden attributes
-        self.__transform_dir__ = '../lib/transforms'
+        self.__transform_dir__ = path('lib/transforms')
 
         # initializer functions
         self.__init_transforms__()
@@ -86,6 +88,16 @@ class Dataset():
                     raise ValueError(f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
                 self.datasets[name]["data"][feature_name] = feature
 
+    def remove_feature(self, feature_name:str, names=None):
+
+        if names is None or len(names) == 0:
+            for name in self.datasets.keys():
+                self.datasets[name]["data"].drop([feature_name], axis=1, inplace=True)
+
+        else:
+            for name in names:
+                self.datasets[name]["data"].drop(feature_name, axis=1, inplace=True)
+
     def apply_item(self, feature_name: str, item, names=None):
         if names is None or len(names) == 0:
             # add to all datasets
@@ -96,10 +108,15 @@ class Dataset():
             for name in names:
                 self.datasets[name]["data"][feature_name] = pd.Series([item] * self.len(name))
 
-    def provide(self, name):
-        return self.datasets[name]["data"]
+    def provide(self, name, split=True):
+        if split:
+            y = self.datasets[name]["data"][self.y_labels]
+            x = self.datasets[name]["data"].drop(self.y_labels, axis=1)
+            return x.values, y.values
+        else:
+            return self.datasets[name]["data"].values
 
-    def statistics(self):
+    def statistics(self, kind:str):
         pass
 
     def get_items(self):
@@ -118,14 +135,14 @@ class Dataset():
         :return:
         """
         transform_files = os.listdir(self.__transform_dir__)
-        transform_files = remove(transform_files, '__pycache__')
+        transform_files = [file for file in transform_files if file.endswith('.py')]
 
         user_transform_files = self.transform_config.keys()
 
         transforms = []
         for user_transform in user_transform_files:
             if f'{user_transform}.py' in transform_files:
-                plugin = importlib.import_module(f'{user_transform}', package='../lib/transforms')
+                plugin = importlib.import_module(f'{user_transform}', package=self.__transform_dir__)
                 plugin = plugin.Transform(self.transform_config[user_transform])
                 transforms.append(plugin)
 
@@ -133,24 +150,41 @@ class Dataset():
 
 
 if __name__ == "__main__":
-    src = '../../data/raw/'
 
     config = {
-        'src': src,
-        'transforms': {
-            'merge_datasets':{
-                'name': 'beta-2-ag-ant',
-            },
-            'change_nans':{
-                'value': 0
+        'project': 'wandb project name',
+        'wandb_key': 'wandb API key',
+
+        'dataset': {
+            'src': '../../data/raw',
+            'labels': 'target',
+            'transforms': {
+                'merge_datasets': dict(
+                    name='beta-2-ag-ant',
+                ),
+                'change_nans': dict(
+                    value=0
+                )
             }
+        },
+        'models': {
+            'random_forest': dict(
+                run_name='RFC Test Run',
+                model_name="Standard RandomForest 1",
+                dataset="beta-2-ag-ant",
+                k_folds=10,
+                learning_curve=True,
+                n_estimators=10,
+                max_features=100
+            )
         }
     }
 
-    dataset = Dataset(config=config)
+    dataset = Dataset(config=config["dataset"])
     dataset.load()
     dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
     dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
+    dataset.remove_feature(feature_name='Ligand_Pose', names=['R-ag', 'B2in-ant'])
     dataset.transform()
     a = 0
 
