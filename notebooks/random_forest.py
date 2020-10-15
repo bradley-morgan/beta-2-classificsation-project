@@ -49,29 +49,29 @@ a = 0
 
 
 # scores = []
-# for train_idx, test_idx in cv.split(x_data, y_data):
-#     train_x, test_x = x_data[train_idx], x_data[test_idx]
-#     train_y, test_y = y_data[train_idx], y_data[test_idx]
-#
-#     # summarize train and test composition
-#     train_0, train_1 = len(train_y[train_y == 0]), len(train_y[train_y == 1])
-#     test_0, test_1 = len(test_y[test_y == 0]), len(test_y[test_y == 1])
-#     print('>Train: 0: %d, 1: %d, Test: 0: %d, 1: %d' % (train_0, train_1, test_0, test_1))
-#
-#     model = RandomForestClassifier()
-#     s = model.fit(train_x, train_y).score(train_x, train_y)
-#     y_preds = model.predict(test_x)
-#     conf_mat = confusion_matrix(test_y, y_preds)
-#
-#     fid, ax = plt.subplots(figsize=(3,3))
-#     ax = sns.heatmap(conf_mat,
-#                      annot=True,
-#                      cbar=False,
-#                      fmt='d')
-#     plt.xlabel("True Label")
-#     plt.ylabel("Predicted Label")
-#
-#     a = 0
+for train_idx, test_idx in cv.split(x_data, y_data):
+    train_x, test_x = x_data[train_idx], x_data[test_idx]
+    train_y, test_y = y_data[train_idx], y_data[test_idx]
+
+    # summarize train and test composition
+    train_0, train_1 = len(train_y[train_y == 0]), len(train_y[train_y == 1])
+    test_0, test_1 = len(test_y[test_y == 0]), len(test_y[test_y == 1])
+    print('>Train: 0: %d, 1: %d, Test: 0: %d, 1: %d' % (train_0, train_1, test_0, test_1))
+
+    model = RandomForestClassifier()
+    s = model.fit(train_x, train_y).score(train_x, train_y)
+    y_preds = model.predict(test_x)
+    conf_mat = confusion_matrix(test_y, y_preds)
+
+    fig, ax = plt.subplots(figsize=(3,3))
+    ax = sns.heatmap(conf_mat,
+                     annot=True,
+                     cbar=False,
+                     fmt='d')
+    plt.xlabel("True Label")
+    plt.ylabel("Predicted Label")
+
+    a = 0
 
 
 

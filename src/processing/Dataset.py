@@ -29,7 +29,7 @@ class Dataset():
     def __init__(self, config:dict):
 
         # User defined attributes
-        self.src = config["src"]
+        self.src = path(config["src"])
         self.transform_config = config["transforms"]
         self.y_labels = config["labels"]
 
@@ -43,7 +43,6 @@ class Dataset():
 
         # initializer functions
         self.__init_transforms__()
-
 
     def load(self):
 
@@ -108,13 +107,25 @@ class Dataset():
             for name in names:
                 self.datasets[name]["data"][feature_name] = pd.Series([item] * self.len(name))
 
-    def provide(self, name, split=True):
-        if split:
-            y = self.datasets[name]["data"][self.y_labels]
-            x = self.datasets[name]["data"].drop(self.y_labels, axis=1)
-            return x.values, y.values
+    def provide(self, name, y_labels=None, shuffle=False, dtype=None):
+        # TODO Out of scope: add the ability to select a range of columns to be x data
+        # Flexibility
+        dataFrame = self.datasets[name]["data"]
+        if shuffle:
+            dataFrame = dataFrame.sample(frac=1).reset_index(drop=True)
+
+        if y_labels:
+            y = dataFrame[y_labels].values
+            x = dataFrame.drop(y_labels, axis=1).values
+
+            if dtype:
+                x = x.astype(dtype)
+                y = y.astype(dtype)
+            return x, y
         else:
-            return self.datasets[name]["data"].values
+            dataFrame = dataFrame.values
+            dataFrame = dataFrame.astype(dtype)
+            return dataFrame
 
     def statistics(self, kind:str):
         pass
@@ -153,10 +164,10 @@ if __name__ == "__main__":
 
     config = {
         'project': 'wandb project name',
-        'wandb_key': 'wandb API key',
+        'wandb_key': '003bdcde0a7e623fdeb0425c3079a7aed09a32e6',
 
         'dataset': {
-            'src': '../../data/raw',
+            'src': '../data/raw',
             'labels': 'target',
             'transforms': {
                 'merge_datasets': dict(
@@ -172,6 +183,7 @@ if __name__ == "__main__":
                 run_name='RFC Test Run',
                 model_name="Standard RandomForest 1",
                 dataset="beta-2-ag-ant",
+                y_labels="target",
                 k_folds=10,
                 learning_curve=True,
                 n_estimators=10,
