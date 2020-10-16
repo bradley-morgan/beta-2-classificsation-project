@@ -34,6 +34,7 @@ six==1.15.0
 smmap==3.0.4
 subprocess32==3.5.4
 threadpoolctl==2.1.0
+tqdm==4.50.2
 urllib3==1.25.10
-wandb==0.10.5
+wandb==0.10.7
 watchdog==0.10.3

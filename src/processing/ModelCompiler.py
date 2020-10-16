@@ -40,12 +40,15 @@ class Compiler:
 
         models = []
         for user_model in user_models_files:
-            if f'{user_model}.py' in model_files:
-                plugin = importlib.import_module(f'{user_model}', package=self.__model_dir__)
-                model_config = self.config[user_model]
-                model_config["setup"]["project"] = self.project
-                plugin = plugin.Model(model_config)
-                models.append(plugin)
+            model_config = self.config[user_model]
+            user_file = model_config["setup"]["file"]
+
+            if f'{user_file}.py' in model_files:
+                if model_config["setup"]["active"]:
+                    plugin = importlib.import_module(f'{user_file}', package=self.__model_dir__)
+                    model_config["setup"]["project"] = self.project
+                    plugin = plugin.Model(model_config)
+                    models.append(plugin)
 
         self.model_chain = models
 
@@ -55,34 +58,4 @@ class Compiler:
 
 
 if __name__ == "__main__":
-    #
-    config = {
-        'project': 'wandb project name',
-        'wandb_key': '003bdcde0a7e623fdeb0425c3079a7aed09a32e6',
-
-        'dataset': {
-            'src': '../../data/raw',
-            'labels': 'target',
-            'transforms': {
-                'merge_datasets': dict(
-                    name='beta-2-ag-ant',
-                ),
-                'change_nans': dict(
-                    value=0
-                )
-            }
-        },
-        'models': {
-            'random_forest': dict(
-                run_name='RFC Test Run',
-                model_name="Standard RandomForest 1",
-                dataset="beta-2-ag-ant",
-                y_labels="target",
-                k_folds=10,
-                learning_curve=True,
-                n_estimators=10,
-                max_features=100
-            )
-        }
-    }
-    a = Compiler('placeholder1', config=config["models"])
+    pass
