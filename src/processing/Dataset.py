@@ -116,12 +116,15 @@ class Dataset():
 
         if y_labels:
             y = dataFrame[y_labels].values
-            x = dataFrame.drop(y_labels, axis=1).values
+            x = dataFrame.drop(y_labels, axis=1)
+            feature_names = list(x.columns)
+            x = x.values
 
             if dtype:
                 x = x.astype(dtype)
                 y = y.astype(dtype)
-            return x, y
+
+            return x, y, feature_names
         else:
             dataFrame = dataFrame.values
             dataFrame = dataFrame.astype(dtype)

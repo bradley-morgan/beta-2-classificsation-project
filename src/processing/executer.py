@@ -4,7 +4,7 @@ from src.processing.ModelCompiler import Compiler
 # TODO Root Folder is src so path names should be referenced from there
 # Setup
 config = {
-    'project': 'Beta 2 Experiment 3',
+    'project': 'Beta 2 Project - Decision Trees',
     'wandb_key': '003bdcde0a7e623fdeb0425c3079a7aed09a32e6',
 
     'dataset': {
@@ -20,101 +20,128 @@ config = {
         }
     },
     'models': {
-        'naive_model1': {
+        'decision_tree1': {
             'setup': dict(
                 active=False,
-                file="naive_model",
-                id="naive-majority-1",
-                run_name='naive model majority class',
-                model_name="naive model majority class",
+                file="decision_tree",
+                id="decision_tree_1",
+                run_name='CART Model 1',
+                model_name="CART Model",
                 dataset="beta-2-ag-ant",
                 y_labels="target",
                 shuffle=True,
-                dtype='int64'
+                dtype='int64',
+                notes='Try a decision tree see which feature it is splitting the data on'
             ),
             'model': dict(
-                k_folds=10,
-                model_type="majority",
-                scorer="Matthews Correlation Coefficient"
-            )
-        },
-        'naive_model2': {
-            'setup': dict(
-                active=False,
-                file="naive_model",
-                id="naive-minority-1",
-                run_name='naive model minority class',
-                model_name="naive model minority class",
-                dataset="beta-2-ag-ant",
-                y_labels="target",
-                shuffle=True,
-                dtype='int64'
-            ),
-            'model': dict(
-                k_folds=10,
-                model_type="minority",
-                scorer="Matthews Correlation Coefficient"
-            )
-        },
-        'naive_model3': {
-            'setup': dict(
-                active=False,
-                file="naive_model",
-                id="naive-random-1",
-                run_name='naive model random class',
-                model_name="naive model random class",
-                dataset="beta-2-ag-ant",
-                y_labels="target",
-                shuffle=True,
-                dtype='int64'
-            ),
-            'model': dict(
-                k_folds=10,
-                model_type="random",
-                scorer="Matthews Correlation Coefficient"
-            )
-        },
-        'random_forest1': {
-            'setup': dict(
-                active=False,
-                file="random_forest",
-                id="random-forest-1",
-                run_name='Random Forest Complex',
-                model_name="Standard RandomForest 1",
-                dataset="beta-2-ag-ant",
-                y_labels="target",
-                shuffle=True,
-                dtype='int64'
-            ),
-            'model': dict(
-                n_jobs=3,
+                n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
-                n_estimators=100,
-                max_features='auto',
-                bootstrap=True,
+                class_names=['ant', 'ag'],
+                criterion='gini',
+                splitter='best',
+                max_depth=3,
+                max_features=None,
                 scorer="Matthews Correlation Coefficient"
             )
         },
-        'random_forest2': {
+        'decision_tree2': {
+            'setup': dict(
+                active=False,
+                file="decision_tree",
+                id="decision_tree_2",
+                run_name='CART Model 2',
+                model_name="CART Model",
+                dataset="beta-2-ag-ant",
+                y_labels="target",
+                shuffle=True,
+                dtype='int64',
+                notes='Try a decision tree see which feature it is splitting the data on'
+            ),
+            'model': dict(
+                n_jobs=4,
+                k_folds=10,
+                learning_curve=True,
+                class_names=['ant', 'ag'],
+                criterion='gini',
+                splitter='best',
+                max_depth=5,
+                max_features=None,
+                scorer="Matthews Correlation Coefficient"
+            )
+        },
+        'decision_tree3': {
+            'setup': dict(
+                active=False,
+                file="decision_tree",
+                id="decision_tree_3",
+                run_name='CART Model 3',
+                model_name="CART Model",
+                dataset="beta-2-ag-ant",
+                y_labels="target",
+                shuffle=True,
+                dtype='int64',
+                notes='Try a decision tree see which feature it is splitting the data on'
+            ),
+            'model': dict(
+                n_jobs=4,
+                k_folds=10,
+                learning_curve=True,
+                class_names=['ant', 'ag'],
+                criterion='gini',
+                splitter='best',
+                max_depth=10,
+                max_features=None,
+                scorer="Matthews Correlation Coefficient"
+            )
+        },
+        'decision_tree4': {
+            'setup': dict(
+                active=False,
+                file="decision_tree",
+                id="decision_tree_4",
+                run_name='CART Model 4',
+                model_name="CART Model",
+                dataset="beta-2-ag-ant",
+                y_labels="target",
+                shuffle=True,
+                dtype='int64',
+                notes='Try a decision tree see which feature it is splitting the data on'
+            ),
+            'model': dict(
+                n_jobs=4,
+                k_folds=10,
+                learning_curve=True,
+                class_names=['ant', 'ag'],
+                criterion='gini',
+                splitter='best',
+                max_depth=None,
+                max_features=None,
+                scorer="Matthews Correlation Coefficient"
+            )
+        },
+        'decision_tree5': {
             'setup': dict(
                 active=True,
-                file="random_forest",
-                id="random-forest-3",
-                run_name='Random Forest Decision Tree',
-                model_name="Standard RandomForest as DT",
+                file="decision_tree",
+                id="decision_tree_5",
+                run_name='CART Model 5',
+                model_name="CART Model",
                 dataset="beta-2-ag-ant",
                 y_labels="target",
                 shuffle=True,
-                dtype='int64'
+                dtype='int64',
+                notes='Try a decision tree see which feature it is splitting the data on'
             ),
             'model': dict(
-                n_jobs=3,
+                n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
-                n_estimators=1,
-                max_features=1,
-                bootstrap=False,
+                class_names=['ant', 'ag'],
+                criterion='gini',
+                splitter='best',
+                max_depth=1,
+                max_features=None,
                 scorer="Matthews Correlation Coefficient"
             )
         }
