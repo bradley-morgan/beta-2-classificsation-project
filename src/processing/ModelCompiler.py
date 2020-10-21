@@ -16,7 +16,7 @@ class Compiler:
         self.model_chain = []
 
         # hidden attributes
-        self.__model_dir__ = path('lib/modeling')
+        self.__model_dir__ = path('library/modeling')
 
         # Initializer functions
         self.__init__models__()

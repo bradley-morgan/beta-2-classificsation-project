@@ -39,7 +39,7 @@ class Dataset():
         self.transforms = []
 
         # Hidden attributes
-        self.__transform_dir__ = path('lib/transforms')
+        self.__transform_dir__ = path('library/transforms')
 
         # initializer functions
         self.__init_transforms__()
