@@ -31,7 +31,7 @@ config = {
                 dtype='int64',
                 notes='Try a decision tree see which feature it is splitting the data on'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
@@ -56,7 +56,7 @@ config = {
                 dtype='int64',
                 notes='Try a decision tree see which feature it is splitting the data on'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
@@ -81,7 +81,7 @@ config = {
                 dtype='int64',
                 notes='Try a decision tree see which feature it is splitting the data on'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
@@ -106,7 +106,7 @@ config = {
                 dtype='int64',
                 notes='Try a decision tree see which feature it is splitting the data on'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=4,
                 k_folds=10,
                 learning_curve=True,
@@ -131,7 +131,7 @@ config = {
                 dtype='int64',
                 notes='Try a decision tree see which feature it is splitting the data on'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=4,
                 k_folds=10,
                 learning_curve=True,

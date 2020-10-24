@@ -20,14 +20,14 @@ config = {
                 active=False,
                 file="naive_model",
                 id="naive-majority-1",
-                run_name='naive model majority class',
-                model_name="naive model majority class",
+                run_name='naive models majority class',
+                model_name="naive models majority class",
                 dataset="beta-2-ag-ant",
                 y_labels="target",
                 shuffle=True,
                 dtype='int64'
             ),
-            'model': dict(
+            'models': dict(
                 k_folds=10,
                 model_type="majority",
                 scorer="Matthews Correlation Coefficient"
@@ -38,14 +38,14 @@ config = {
                 active=False,
                 file="naive_model",
                 id="naive-minority-1",
-                run_name='naive model minority class',
-                model_name="naive model minority class",
+                run_name='naive models minority class',
+                model_name="naive models minority class",
                 dataset="beta-2-ag-ant",
                 y_labels="target",
                 shuffle=True,
                 dtype='int64'
             ),
-            'model': dict(
+            'models': dict(
                 k_folds=10,
                 model_type="minority",
                 scorer="Matthews Correlation Coefficient"
@@ -56,14 +56,14 @@ config = {
                 active=False,
                 file="naive_model",
                 id="naive-random-1",
-                run_name='naive model random class',
-                model_name="naive model random class",
+                run_name='naive models random class',
+                model_name="naive models random class",
                 dataset="beta-2-ag-ant",
                 y_labels="target",
                 shuffle=True,
                 dtype='int64'
             ),
-            'model': dict(
+            'models': dict(
                 k_folds=10,
                 model_type="random",
                 scorer="Matthews Correlation Coefficient"
@@ -81,7 +81,7 @@ config = {
                 shuffle=True,
                 dtype='int64'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=3,
                 k_folds=10,
                 learning_curve=True,
@@ -103,7 +103,7 @@ config = {
                 shuffle=True,
                 dtype='int64'
             ),
-            'model': dict(
+            'models': dict(
                 n_jobs=3,
                 k_folds=10,
                 learning_curve=True,

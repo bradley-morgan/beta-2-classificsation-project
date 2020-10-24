@@ -1,14 +1,13 @@
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix
 from src.library.metrics.matthews_coefficient import matthews_coefficient
 from src.utils.ImageSaver import ImageSaver
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 import seaborn as sns
 import numpy as np
 import wandb
 from tqdm import tqdm
+
 
 class Model:
 
@@ -27,13 +26,12 @@ class Model:
         self.y_labels = self.config["setup"]["y_labels"]
 
         # Model specific attributes
-        self.k_folds = self.config["model"]["k_folds"]
-        self.model_type = self.config["model"]["model_type"]
+        self.k_folds = self.config["models"]["k_folds"]
+        self.model_type = self.config["models"]["model_type"]
 
         # Default Attributes
-        self.x_data = None
-        self.y_data = None
-
+        self.x_train = None
+        self.y_train = None
 
         # Model Performance attributes
         self.global_score = None
@@ -43,7 +41,7 @@ class Model:
         self.median_confusion_matrix = None
         self.learning_curve = []
 
-        #Initializers
+        # Initializers
 
     def init_run(self):
         self.run = wandb.init(project=self.config["setup"]["project"],
@@ -52,11 +50,11 @@ class Model:
                               notes=self.config["setup"]["notes"],
                               config=self.config)
 
-    def train(self, dataset):
+    def validate(self, dataset):
         self.init_run()
         self.split_data(dataset)
 
-        elements, counts = np.unique(self.y_data, return_counts=True)
+        elements, counts = np.unique(self.y_train, return_counts=True)
         class_selector = None
         if self.model_type == 'majority':
             # determine majority class
@@ -71,10 +69,10 @@ class Model:
         cv = StratifiedKFold(n_splits=self.k_folds, shuffle=True)
 
         with tqdm(total=self.k_folds, bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}') as progress_bar:
-            for train_idx, test_idx in cv.split(self.x_data, self.y_data):
+            for train_idx, test_idx in cv.split(self.x_train, self.y_train):
                 # extract hold out test set
-                train_x, test_x = self.x_data[train_idx], self.x_data[test_idx]
-                train_y, test_y = self.y_data[train_idx], self.y_data[test_idx]
+                train_x, test_x = self.x_train[train_idx], self.x_train[test_idx]
+                train_y, test_y = self.y_train[train_idx], self.y_train[test_idx]
 
                 y_preds = []
                 for sample in test_y:
@@ -86,15 +84,14 @@ class Model:
                         y_preds.append(np.random.choice(elements))
 
                     else:
-                        raise ValueError(f"Invalid model type {self.model_type} choice majority, minority or random")
-
+                        raise ValueError(f"Invalid models type {self.model_type} choice majority, minority or random")
 
                 y_preds = np.asarray(y_preds)
                 conf_mat = confusion_matrix(test_y, y_preds)
                 self.confusion_matrices.append(conf_mat)
 
                 # Calculate matthew correlation coeffcient
-                #score = matthews_corrcoef(test_y, y_preds)
+                # score = matthews_corrcoef(test_y, y_preds)
                 score = matthews_coefficient(conf_mat)
                 self.scorer_matrix.append(score)
 
@@ -102,12 +99,9 @@ class Model:
 
                 progress_bar.update(1)
 
-
-
-
     def log(self):
         sns.set()
-        # # log model choice counts
+        # # log models choice counts
         plt.hist(self.y_preds, bins=2, rwidth=0.5)
         plt.title(f"Model Class Selection across {self.k_folds} folds")
         plt.xlabel("classes")
@@ -118,7 +112,6 @@ class Model:
                               name='model_selection',
                               format='png')
         plt.clf()
-
 
         # PLOT and LOG to cloud : Confusion matrix data
         self.run.log({"confusion matrices": self.confusion_matrices})
@@ -149,7 +142,6 @@ class Model:
                               format='png')
         plt.clf()
 
-
     def evaluate(self):
         # Calculate median confusion matrix across k-folds
         mat = np.asarray(self.confusion_matrices)
@@ -164,10 +156,9 @@ class Model:
         self.run.finish()
 
     def split_data(self, dataset):
-        x_data, y_data = dataset.provide(self.dataset,
-                                         self.y_labels,
-                                         shuffle=True,
-                                         dtype=self.dtype)
-        self.x_data = x_data
-        self.y_data = y_data
-
+        x_train, _, y_train, _, _ = dataset.provide(self.dataset,
+                                                    self.y_labels,
+                                                    shuffle=True,
+                                                    dtype=self.dtype)
+        self.x_train = x_train
+        self.y_train = y_train
