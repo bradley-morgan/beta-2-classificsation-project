@@ -13,6 +13,7 @@ when creating & initantiating the dataset class
 Merge Datasets Transfrom merges all datasets together into one
 """
 
+
 class Transform:
 
     def __init__(self, config):
@@ -37,7 +38,6 @@ class Transform:
 
                 out_dataset[group_name] = {'data': merged_df}
 
-
         if merge_all:
             keys = list(datasets.keys())
 
@@ -50,40 +50,3 @@ class Transform:
             out_dataset[merge_all_name] = {'data': merged_df}
 
         return out_dataset
-
-        # out_dataset = {}
-        # groups = self.config["groups"]
-        #
-        #
-        # if len(self.config["groups"]) > 0:
-        #
-        #     for group in groups:
-        #
-        #
-        # if self.config["merge_all"]:
-        #    keys = list(datasets.keys())
-        #
-        #    f_key = keys.pop()
-        #    merged_df = datasets[f_key]["data"]
-        #    for name in datasets.keys():
-        #        data = datasets[name]["data"]
-        #        merged_df = merged_df.append(data, sort=False)
-        #
-        #     out_dataset[self.config["name"]] = {'data': merged_df}
-        #
-        # return out_dataset
-        #
-
-
-
-       #
-       # keys = list(datasets.keys())
-       #
-       # f_key = keys.pop()
-       # merged_df = datasets[f_key]["data"]
-       # for name in datasets.keys():
-       #     data = datasets[name]["data"]
-       #     merged_df = merged_df.append(data, sort=False)
-       #
-       # datasets = {self.config['name']: {'data': merged_df} }
-       # return datasets

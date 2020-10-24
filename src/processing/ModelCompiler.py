@@ -1,6 +1,7 @@
 import os
 import importlib
 from src.utils.set_path import path
+from warnings import warn
 
 class Compiler:
 
@@ -21,14 +22,16 @@ class Compiler:
         # Initializer functions
         self.__init__models__()
 
+        # Flags
+        self.models_compiled_flag = False
 
     def execute(self):
-
-        for model in self.model_chain:
-            model.train(self.dataset)
-            model.evaluate()
-            model.log()
-            model.terminate()
+        if self.models_compiled_flag:
+            for model in self.model_chain:
+                model.validate(self.dataset)
+                model.evaluate()
+                model.log()
+                model.terminate()
 
     def __init__models__(self):
 
@@ -49,6 +52,14 @@ class Compiler:
                     model_config["setup"]["project"] = self.project
                     plugin = plugin.Model(model_config)
                     models.append(plugin)
+
+        if len(models) == 0:
+            warn('Model Compiler: No Model files have been compiled please check your config and make sure your models'
+                 'are set to active-True')
+
+        else:
+            self.models_compiled_flag = True
+
 
         self.model_chain = models
 

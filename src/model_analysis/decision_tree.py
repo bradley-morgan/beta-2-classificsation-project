@@ -1,17 +1,13 @@
 from src.processing.Dataset import Dataset
-from src.processing.ModelCompiler import Compiler
+from src.library.modeling.decision_tree import Model
 
-# ag = 1 ant = 0
-
-# TODO Root Folder is src so path names should be referenced from there
-# Setup
-config = {
+dataset_config = {
     'project': 'test split',
-    'wandb_key': '003bdcde0a7e623fdeb0425c3079a7aed09a32e6',
-
+    'wandb_key': None,
     'dataset': {
         'src': '../data/raw',
         'name': 'dataset test',
+        'log': False,
         'labels': 'target',
         'notes': 'Data contains B2in, Z, R and Merged datasets',
         'test_size': 0.1,
@@ -23,23 +19,27 @@ config = {
             'merge_datasets': dict(
                 merge_all=True,
                 merge_all_name='merged-B2in-Z-R',
-                groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
-                group_names=['B2in', 'R', 'Z']
+                groups=[],
+                group_names=[]
             ),
-            # 'drop_nans': dict(
-            #     target_datasets=['B2in', 'R', 'Z']
-            # )
+        'change_nans': dict(
+                        value=0
+                    )
         }
-    },
-    'models': {
-        'decision_tree1': {
+    }
+}
+
+model_config = {
             'setup': dict(
+                project ='test split',
+                wandb_key=None,
+                log=False,
                 active=True,
                 file="decision_tree",
                 id="decision_tree_1",
-                run_name='B2in',
+                run_name='CART - Merged-B2in-Z-R',
                 model_name="CART Model",
-                dataset="B2in",
+                dataset="merged-B2in-Z-R",
                 y_labels="target",
                 shuffle=True,
                 dtype='int64',
@@ -56,18 +56,20 @@ config = {
                 max_features=None,
                 scorer="Matthews Correlation Coefficient"
             )
-        },
-    }
-}
+        }
 
-dataset = Dataset(config=config)
+dataset = Dataset(config=dataset_config)
 dataset.load()
 dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
 dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
 dataset.remove_feature(feature_name='Ligand_Pose')
 dataset.transform()
-dataset.statistics()
-dataset.log()
 
-model_chain = Compiler(dataset=dataset, config=config)
-model_chain.execute()
+model = Model(config=model_config)
+model.validate(dataset=dataset)
+model.train()
+
+a = 0
+
+
+

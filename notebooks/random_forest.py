@@ -86,7 +86,7 @@ for train_idx, test_idx in cv.split(x_data, y_data):
 
 
 # MCC_scorer = make_scorer(matthews_corrcoef)
-# scores = cross_val_score(model, x_data, y_data, scoring=MCC_scorer, cv=cv, n_jobs=1)
+# scores = cross_val_score(models, x_data, y_data, scoring=MCC_scorer, cv=cv, n_jobs=1)
 #
 # #Metrics
 # print('MCC: %.3f (%.3f)' % (mean(scores), std(scores)))

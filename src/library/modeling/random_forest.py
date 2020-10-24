@@ -10,15 +10,11 @@ import wandb
 from tqdm import tqdm
 
 
-
-
-
-#TODO Support for configurable performance metrics
+# TODO Support for configurable performance metrics
 
 class Model:
 
     def __init__(self, config):
-
         # setup
         self.config = config
         self.run = None
@@ -33,16 +29,19 @@ class Model:
         self.y_labels = self.config["setup"]["y_labels"]
 
         # Model specific attributes
-        self.n_jobs = self.config["model"]["n_jobs"]
-        self.k_folds = self.config["model"]["k_folds"]
-        self.learning_curve = self.config["model"]["learning_curve"]
-        self.n_estimators = self.config["model"]["n_estimators"]
-        self.max_features = self.config["model"]["max_features"]
-        self.bootstrap = self.config["model"]["bootstrap"]
+        self.n_jobs = self.config["models"]["n_jobs"]
+        self.k_folds = self.config["models"]["k_folds"]
+        self.learning_curve = self.config["models"]["learning_curve"]
+        self.n_estimators = self.config["models"]["n_estimators"]
+        self.max_features = self.config["models"]["max_features"]
+        self.bootstrap = self.config["models"]["bootstrap"]
 
         # Default Attributes
-        self.x_data = None
-        self.y_data = None
+        self.x_train = None
+        self.y_train = None
+        self.x_test = None
+        self.y_test = None
+        self.feature_names = None
 
         # Model Performance attributes
         self.global_score = None
@@ -61,7 +60,7 @@ class Model:
                               notes=self.config["setup"]["notes"],
                               config=self.config, reinit=True)
 
-    def train(self, dataset):
+    def validate(self, dataset):
         # Should always begin with this
         self.init_run()
         self.split_data(dataset)
@@ -70,20 +69,18 @@ class Model:
         cv = StratifiedKFold(n_splits=self.k_folds, shuffle=True)
 
         with tqdm(total=self.k_folds, bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}') as progress_bar:
-            for train_idx, test_idx in cv.split(self.x_data, self.y_data):
-
+            for train_idx, test_idx in cv.split(self.x_train, self.y_train):
                 # extract hold out test set
                 d = set(train_idx) & set(test_idx)
-                train_x, test_x = self.x_data[train_idx], self.x_data[test_idx]
-                train_y, test_y = self.y_data[train_idx], self.y_data[test_idx]
+                train_x, test_x = self.x_train[train_idx], self.x_train[test_idx]
+                train_y, test_y = self.y_train[train_idx], self.y_train[test_idx]
 
                 # summarize train and test composition
                 train_0, train_1 = len(train_y[train_y == 0]), len(train_y[train_y == 1])
                 test_0, test_1 = len(test_y[test_y == 0]), len(test_y[test_y == 1])
                 print('>Train: 0: %d, 1: %d, Test: 0: %d, 1: %d' % (train_0, train_1, test_0, test_1))
 
-
-                # Fit and Validate model then generate confusion matrix
+                # Fit and Validate models then generate confusion matrix
                 model = RandomForestClassifier(
                     n_estimators=self.n_estimators,
                     max_features=self.max_features,
@@ -102,11 +99,10 @@ class Model:
 
                 progress_bar.update(1)
 
-        #TODO Add learning Curve
+        # TODO Add learning Curve
 
     def log(self):
         sns.set()
-
 
         # PLOT and LOG to cloud : Confusion matrix data
         self.run.log({"confusion matrices": self.confusion_matrices})
@@ -137,10 +133,6 @@ class Model:
                               format='png')
         plt.clf()
 
-
-
-
-
     def evaluate(self):
         # Calculate median confusion matrix across k-folds
         mat = np.asarray(self.confusion_matrices)
@@ -162,12 +154,14 @@ class Model:
         self.run.finish()
 
     def split_data(self, dataset):
-        x_data, y_data, feature_names = dataset.provide(self.dataset,
-                                         self.y_labels,
-                                         shuffle=True,
-                                         dtype=self.dtype)
-        self.x_data = x_data
-        self.y_data = y_data
+        x_train, x_test, y_train, y_test, feature_names = dataset.provide(self.dataset,
+                                                                          self.y_labels,
+                                                                          shuffle=True,
+                                                                          dtype=self.dtype)
+        self.x_train = x_train
+        self.y_train = y_train
+        self.x_test = x_test
+        self.y_test = y_test
         self.feature_names = feature_names
 
 
