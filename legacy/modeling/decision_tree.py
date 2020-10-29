@@ -1,8 +1,8 @@
 from sklearn.tree import DecisionTreeClassifier
 from joblib import dump
+from scipy.stats import sem
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import confusion_matrix
-from src.library.metrics.matthews_coefficient import matthews_coefficient
+from sklearn.metrics import confusion_matrix, matthews_corrcoef
 from src.utils.ImageSaver import ImageSaver
 from src.utils.set_path import path
 import matplotlib.pyplot as plt
@@ -22,6 +22,8 @@ class Model:
         self.config = config
         self.run = None
         self.image_saver = ImageSaver()
+        self.log_data = self.config["setup"]["log"]
+        self.save_model = self.config["setup"]["save_model"]
 
         # Model agnostic attributes
         self.id = self.config["setup"]["id"]
@@ -30,11 +32,10 @@ class Model:
         self.model_name = self.config["setup"]["model_name"]
         self.dataset = self.config["setup"]["dataset"]
         self.y_labels = self.config["setup"]["y_labels"]
-        self.save_model = self.config["setup"]["save_model"]
-        self.log = self.config["setup"]["log"]
 
         # Model specific attributes
         self.n_jobs = self.config["models"]["n_jobs"]
+        self.n_repeats = self.config["models"]["n_repeats"]
         self.k_folds = self.config["models"]["k_folds"]
         self.learning_curve = self.config["models"]["learning_curve"]
         self.class_names = self.config["models"]["class_names"]
@@ -51,14 +52,15 @@ class Model:
         self.y_test = None
         self.feature_names = None
 
-        # Model Performance attributes for K-fold validation only
+        # VALIDATION: Model Performance attributes for K-fold validation only
         self.validation_models = []
-        self.validation_global_performance_score = None
         self.validation_scorer_matrix = []
         self.validation_confusion_matrices = []
+        self.validation_mean_performance_score = None
+        self.validation_standard_error = None
         self.validation_median_confusion_matrix = None
 
-        # Model Attributes and performance for final training and evaluation
+        # TRAINING: Model Attributes and performance for final training and evaluation
         self.final_model = None
         self.final_confusion_matrix = None
         self.final_performance_score = None
@@ -66,86 +68,53 @@ class Model:
         # Hidden attributes
         self.__save_dir__ = path('../models')
 
-        #Flags
+        # Flags
         self.train_flag = False
-
 
     def init_run(self):
         # setup
-        if self.log:
-            self.run = wandb.init(project=self.config["setup"]["project"],
-                                  name=self.config["setup"]["run_name"],
-                                  id=self.config["setup"]["id"],
-                                  config=self.config, reinit=True)
+        self.run = wandb.init(project=self.config["setup"]["project"],
+                              name=self.config["setup"]["run_name"],
+                              id=self.config["setup"]["id"],
+                              config=self.config, reinit=True)
 
     def validate(self, dataset):
-        # Should always begin with this
-        self.init_run()
+        """
+        This Function runs Repeated K-Fold Cross Validation
+        :param dataset: The dict of datasets for the model config to select training data from
+        """
         self.split_data(dataset)
+        with tqdm(total=self.n_repeats, bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}', desc='n_repeats') as progress_bar:
 
-        # setup stratified K-fold cross validation
-        cv = StratifiedKFold(n_splits=self.k_folds, shuffle=True)
+            for r in range(self.n_repeats):
+                # setup stratified K-fold cross validation
+                cv = StratifiedKFold(n_splits=self.k_folds, shuffle=True)
+                for train_idx, test_idx in cv.split(self.x_train, self.y_train):
+                    # extract hold out test set
+                    train_x, val_x = self.x_train[train_idx], self.x_train[test_idx]
+                    train_y, val_y = self.y_train[train_idx], self.y_train[test_idx]
 
-        with tqdm(total=self.k_folds, bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}') as progress_bar:
-            for train_idx, test_idx in cv.split(self.x_train, self.y_train):
-                # extract hold out test set
-                train_x, val_x = self.x_train[train_idx], self.x_train[test_idx]
-                train_y, test_y = self.y_train[train_idx], self.y_train[test_idx]
+                    # Fit and Validate models then generate confusion matrix
+                    model = DecisionTreeClassifier(
+                        criterion=self.criterion,
+                        splitter=self.splitter,
+                        max_depth=self.max_depth,
+                        max_features=self.max_features
+                    )
+                    model.fit(train_x, train_y)
+                    y_preds = model.predict(val_x)
 
-                # summarize train and test composition
-                # train_0, train_1 = len(train_y[train_y == 0]), len(train_y[train_y == 1])
-                # test_0, test_1 = len(test_y[test_y == 0]), len(test_y[test_y == 1])
-                # print('>Train: 0: %d, 1: %d, Test: 0: %d, 1: %d' % (train_0, train_1, test_0, test_1))
+                    conf_mat = confusion_matrix(val_y, y_preds)
+                    self.validation_confusion_matrices.append(conf_mat)
 
-                # Fit and Validate models then generate confusion matrix
-                model = DecisionTreeClassifier(
-                    criterion=self.criterion,
-                    splitter=self.splitter,
-                    max_depth=self.max_depth,
-                    max_features=self.max_features
-                )
-                model.fit(train_x, train_y)
-                y_preds = model.predict(val_x)
-
-                conf_mat = confusion_matrix(test_y, y_preds)
-                self.validation_confusion_matrices.append(conf_mat)
-
-                # Calculate matthew correlation coeffcient
-                score = matthews_coefficient(conf_mat)
-                self.validation_scorer_matrix.append(score)
-                self.validation_models.append(model)
+                    # Calculate matthew correlation coeffcient
+                    score = matthews_corrcoef(y_true=val_y, y_pred=y_preds)
+                    self.validation_scorer_matrix.append(score)
+                    self.validation_models.append(model)
 
                 progress_bar.update(1)
 
-    def train(self):
-        # Once models has been a validated we can train a single models on the
-        # The entire dastaset which we will use for further testing and prediction
-
-        model = DecisionTreeClassifier(
-            criterion=self.criterion,
-            splitter=self.splitter,
-            max_depth=self.max_depth,
-            max_features=self.max_features
-        )
-        model.fit(self.x_train, self.y_train)
-        y_preds = model.predict(self.x_test)
-
-        conf_mat = confusion_matrix(self.y_test, y_preds)
-        # Calculate matthew correlation coeffcient
-        score = matthews_coefficient(conf_mat)
-
-        self.final_confusion_matrix = conf_mat
-        self.final_performance_score = score
-        self.final_model = model
-
-        self.train_flag = True
-        # save the models
-        if self.save_model:
-            self.save()
-
-    def log(self):
-        if not self.log:
-            raise ValueError("Log Error: Log is set to False thus no run object is available for logging")
+    def log_validation(self):
         sns.set()
 
         # Plots for Validation Models
@@ -175,9 +144,9 @@ class Model:
 
         # Log Model scores
         self.run.log({"performance scores": self.validation_scorer_matrix})
-        self.run.log({"global performance score": self.validation_global_performance_score})
+        self.run.log({"global performance score": self.validation_mean_performance_score})
         plt.plot(self.validation_scorer_matrix, marker='.', linewidth=2.0)
-        plt.title(f"MCC Model Performance: Global score = {np.around(self.validation_global_performance_score, 3)}")
+        plt.title(f"MCC Model Performance: Global score = {np.around(self.validation_mean_performance_score, 3)}")
         plt.xlabel('K Folds')
         plt.ylabel('Score')
         plt.yticks([-1, -0.5, 0, 0.5, 1, 1.5])
@@ -188,8 +157,7 @@ class Model:
                               format='png')
         plt.clf()
 
-    def evaluate(self):
-
+    def evaluate_validation(self):
         # Calculate median confusion matrix across k-folds
         mat = np.asarray(self.validation_confusion_matrices)
         median_confusion_matrix = np.median(mat, axis=0)
@@ -197,10 +165,43 @@ class Model:
         self.validation_median_confusion_matrix = median_confusion_matrix
 
         # calculate global matthews correlation coefficient
-        self.validation_global_performance_score = np.mean(self.validation_scorer_matrix)
+        self.validation_mean_performance_score = np.mean(self.validation_scorer_matrix)
 
-        # Extract the decision path & whether node features of split nodes are shared or not shared
-        # between ag and ant classes
+        # Calculate standard error
+
+    def train(self):
+        """
+            FINAL MODEL EVALUATION
+            Once models has been a validated we can train a single models on the
+            The entire dastaset which we will use for further testing and prediction
+        """
+        model = DecisionTreeClassifier(
+            criterion=self.criterion,
+            splitter=self.splitter,
+            max_depth=self.max_depth,
+            max_features=self.max_features
+        )
+        model.fit(self.x_train, self.y_train)
+        y_preds = model.predict(self.x_test)
+
+        conf_mat = confusion_matrix(self.y_test, y_preds)
+        # Calculate matthew correlation coeffcient
+        score = matthews_corrcoef(y_true=self.y_test, y_pred=y_preds)
+
+        self.final_confusion_matrix = conf_mat
+        self.final_mean_performance = score
+        self.final_model = model
+
+        self.train_flag = True
+        # save the models
+        if self.save_model:
+            self.save()
+
+    def log_train(self):
+        pass
+
+    def evaluate_train(self):
+        pass
 
     def save(self):
         if not self.train_flag:
@@ -210,7 +211,6 @@ class Model:
         save_path = os.path.join(self.__save_dir__, f'{self.model_name}.joblib')
         dump(self.final_model, save_path)
         print(f'Model {self.model_name}.joblib sucessfully saved to models folder')
-
 
     def load(self):
         pass
@@ -230,5 +230,9 @@ class Model:
         self.feature_names = feature_names
 
 
+# summarize train and test composition
+# train_0, train_1 = len(train_y[train_y == 0]), len(train_y[train_y == 1])
+# test_0, test_1 = len(test_y[test_y == 0]), len(test_y[test_y == 1])
+# print('>Train: 0: %d, 1: %d, Test: 0: %d, 1: %d' % (train_0, train_1, test_0, test_1))
 if __name__ == "__main__":
     pass

@@ -10,6 +10,7 @@ import seaborn as sns
 from src.utils.ImageSaver import ImageSaver
 import wandb
 from tqdm import tqdm
+from warnings import warn
 
 
 """
@@ -31,19 +32,18 @@ Constructor Arguments
 """
 
 
-class Dataset():
+class DatasetCompiler():
 
-    def __init__(self, config:dict):
+    def __init__(self, config, project):
 
 
         # User defined attributes
-        self.project = config["project"]
-        self.wandb_key = config["wandb_key"]
+        self.project = project
 
-        self.config = config["dataset"]
+        self.config = config
         self.name = self.config["name"]
         self.notes = self.config["notes"]
-        self.log = self.config["log"]
+        self.log_data = self.config["log_data"]
         self.src = path(self.config["src"])
         self.transform_config = self.config["transforms"]
         self.stats_config = self.config["stats"]
@@ -56,17 +56,18 @@ class Dataset():
         self.transforms = []
         self.transforms_flag = False
         self.image_saver = ImageSaver()
+        self.run = None
 
-        # Hidden attributes
+        # Hidden Attributes
         self.__transform_dir__ = path('library/transforms')
 
         # initializer functions
-        self.init_run()
         self.__init_transforms__()
+        self.init_run()
 
     def init_run(self):
         # setup
-        if self.log:
+        if self.log_data:
             self.run = wandb.init(project=self.project,
                                   name=self.name,
                                   id='dataset1011001',
@@ -160,14 +161,12 @@ class Dataset():
 
         return x_train, x_test, y_train, y_test, feature_names
 
-
     def get_dataframe(self, name, dtype=None):
 
         dataFrame = self.datasets[name]["data"]
         dataFrame = dataFrame.values
         dataFrame = dataFrame.astype(dtype)
         return dataFrame
-
 
     def statistics(self):
 
@@ -177,7 +176,7 @@ class Dataset():
              'If not please run merge_datasets')
 
         df_names = self.stats_config["names"]
-        label_feature_name = self.stats_config["label_feature_name"]
+        label_feature_name = self.y_labels
 
         if df_names is None or len(df_names) == 0:
             # Loop over all datasets
@@ -257,8 +256,9 @@ class Dataset():
                 progress_bar.update(1)
 
     def log(self):
-        if not self.log:
-            raise ValueError("Log Error: Log is set to False thus no run object is available for logging")
+        if not self.log_data:
+            warn("Log Warning: Log has not run and is set to False thus no run object is available for logging")
+            return
 
         sns.set()
         # Use .loc[0] for ant and .loc[1] for ag when getting class balance from series
@@ -338,49 +338,6 @@ class Dataset():
         self.transforms = transforms
 
 
+
 if __name__ == "__main__":
-
-    config = {
-        'project': 'wandb project name',
-        'wandb_key': '003bdcde0a7e623fdeb0425c3079a7aed09a32e6',
-
-        'dataset': {
-            'src': '../data/raw',
-            'labels': 'target',
-            'transforms': {
-                'merge_datasets': dict(
-                    name='beta-2-ag-ant',
-                ),
-                'change_nans': dict(
-                    value=0
-                )
-            }
-        },
-        'models': {
-            'random_forest': dict(
-                run_name='RFC Test Run',
-                model_name="Standard RandomForest 1",
-                dataset="beta-2-ag-ant",
-                y_labels="target",
-                k_folds=10,
-                learning_curve=True,
-                n_estimators=10,
-                max_features=100
-            )
-        }
-    }
-
-    dataset = Dataset(config=config["dataset"])
-    dataset.load()
-    dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
-    dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
-    dataset.remove_feature(feature_name='Ligand_Pose', names=['R-ag', 'B2in-ant'])
-    dataset.transform()
-    a = 0
-
-
-    # feature_ag = pd.Series([1] * dataset.len('R-ag'))
-    # feature_ant = pd.Series([0] * dataset.len('R-ag'))
-    #
-    #dataset.add_feature(feature_name="target", feature=feature_ag, names=['R-ag'], )
-    # a = 0
+    pass

@@ -1,4 +1,4 @@
-from src.processing.Dataset import Dataset
+from src.processing.DatasetCompiler import DatasetCompiler
 from src.processing.ModelCompiler import Compiler
 
 # ag = 1 ant = 0
@@ -12,6 +12,7 @@ config = {
     'dataset': {
         'src': '../data/raw',
         'name': 'dataset test',
+        'log': False,
         'labels': 'target',
         'notes': 'Data contains B2in, Z, R and Merged datasets',
         'test_size': 0.1,
@@ -23,8 +24,8 @@ config = {
             'merge_datasets': dict(
                 merge_all=True,
                 merge_all_name='merged-B2in-Z-R',
-                groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
-                group_names=['B2in', 'R', 'Z']
+                groups=[],
+                group_names=[]
             ),
             # 'drop_nans': dict(
             #     target_datasets=['B2in', 'R', 'Z']
@@ -36,10 +37,11 @@ config = {
             'setup': dict(
                 active=True,
                 file="decision_tree",
+                log=False,
                 id="decision_tree_1",
                 run_name='B2in',
                 model_name="CART Model",
-                dataset="B2in",
+                dataset="merged-B2in-Z-R",
                 y_labels="target",
                 shuffle=True,
                 dtype='int64',
@@ -47,7 +49,8 @@ config = {
             ),
             'models': dict(
                 n_jobs=4,
-                k_folds=10,
+                n_repeats=3,
+                k_folds=2,
                 learning_curve=True,
                 class_names=['ant', 'ag'],
                 criterion='gini',
@@ -60,7 +63,7 @@ config = {
     }
 }
 
-dataset = Dataset(config=config)
+dataset = DatasetCompiler(config=config)
 dataset.load()
 dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
 dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])

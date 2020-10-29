@@ -8,8 +8,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src/processing" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/utils" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/src/library/transforms" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/library/modeling" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/src/library/metrics" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/legacy/modeling" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/legacy/metrics" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/beta-2-env" />
     </content>
     <orderEntry type="inheritedJdk" />

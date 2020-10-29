@@ -19,19 +19,22 @@ class Compiler:
         # hidden attributes
         self.__model_dir__ = path('library/modeling')
 
-        # Initializer functions
-        self.__init__models__()
-
         # Flags
         self.models_compiled_flag = False
+
+        # Initializer functions
+        self.__init__models__()
 
     def execute(self):
         if self.models_compiled_flag:
             for model in self.model_chain:
+                if model.log_data:
+                    model.init_run()
                 model.validate(self.dataset)
-                model.evaluate()
-                model.log()
-                model.terminate()
+                model.evaluate_validation()
+                if model.log_data:
+                    model.log()
+                    model.terminate()
 
     def __init__models__(self):
 

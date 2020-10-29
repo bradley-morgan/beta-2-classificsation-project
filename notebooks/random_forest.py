@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import RepeatedStratifiedKFold, cross_val_score, StratifiedKFold, cross_validate
 from sklearn.metrics import matthews_corrcoef, make_scorer, confusion_matrix
-from src.processing.Dataset import Dataset
+from src.processing.DatasetCompiler import Dataset
 
 # Setup
 dataset_parameters = {
