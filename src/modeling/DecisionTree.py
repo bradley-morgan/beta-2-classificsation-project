@@ -63,6 +63,7 @@ class DecisionTree:
         self.final_model = None
         self.final_confusion_matrix = None
         self.final_performance_score = None
+        self.final_model_split_node_features = None
 
         # Hidden attributes
         self.__save_dir__ = path('../models')
@@ -142,10 +143,10 @@ class DecisionTree:
         plt.xlabel('K Folds')
         plt.ylabel('Score')
         plt.yticks([-1, -0.5, 0, 0.5, 1, 1.5])
-        plt.xticks([i for i in range(10)])
+        plt.xticks([i for i in range(len(self.validation_scorer_matrix))])
         self.image_saver.save(plot=plt.gcf(),
                               run=self.run,
-                              name='Validation model_performance',
+                              name=f'Validation Model Performance: repeats={self.n_repeats} K-folds={self.k_folds}',
                               format='png')
         plt.clf()
 
@@ -200,9 +201,9 @@ class DecisionTree:
                                        feature_names=self.feature_names,
                                        class_names=self.class_names)
 
-        self.run.log({"Trained confusion matrices": self.validation_confusion_matrices})
-        self.run.log({'Trained Median Confusion Matrix': self.validation_median_confusion_matrix})
-        ax = sns.heatmap(self.validation_median_confusion_matrix,
+        self.run.log({"Trained confusion matrices on Test set": self.final_confusion_matrix})
+        self.run.log({'Trained performance score on test set': self.final_performance_score})
+        ax = sns.heatmap(self.final_confusion_matrix,
                          annot=True,
                          cbar=False,
                          fmt='d')
@@ -210,11 +211,46 @@ class DecisionTree:
         plt.ylabel("Predicted Label")
         plt.close(ax.get_figure())
         plot = ax.get_figure()
-        self.image_saver.save(plot=plot, run=self.run, name='Trained confusion_matrix', format='png')
+        self.image_saver.save(plot=plot, run=self.run, name='Trained confusion_matrix on Test Set', format='png')
         plt.clf()
 
     def evaluate_train(self):
-        pass
+
+        # Get feature importance
+
+        # Get Tree data
+        n_nodes = self.final_model.tree_.node_count
+        children_left = self.final_model.tree_.children_left
+        children_right = self.final_model.tree_.children_right
+        feature = self.final_model.tree_.feature
+        threshold = self.final_model.tree_.threshold
+
+        node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
+        is_leaves = np.zeros(shape=n_nodes, dtype=bool)
+        stack = [(0, 0)]  # start with the root node id (0) and its depth (0)
+        while len(stack) > 0:
+            # `pop` ensures each node is only visited once
+            node_id, depth = stack.pop()
+            node_depth[node_id] = depth
+
+            # If the left and right child of a node is not the same we have a split
+            # node
+            is_split_node = children_left[node_id] != children_right[node_id]
+            # If a split node, append left and right children and depth to `stack`
+            # so we can loop through them
+            if is_split_node:
+                stack.append((children_left[node_id], depth + 1))
+                stack.append((children_right[node_id], depth + 1))
+            else:
+                is_leaves[node_id] = True
+
+        split_node_features = []
+        for i in range(n_nodes):
+            if not is_leaves[i]:
+                split_node_features.append(feature[i])
+
+        self.final_model_split_node_features = split_node_features
+
 
     def save(self):
         if not self.train_flag:

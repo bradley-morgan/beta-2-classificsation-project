@@ -1,0 +1,38 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.10.7
+    framework: sklearn
+    is_jupyter_run: false
+    is_kaggle_kernel: false
+    python_version: 3.8.3
+models:
+  desc: null
+  value:
+    class_names:
+    - ant
+    - ag
+    criterion: gini
+    k_folds: 2
+    max_depth: null
+    max_features: null
+    n_jobs: 4
+    n_repeats: 3
+    scorer: Matthews Correlation Coefficient
+    splitter: best
+setup:
+  desc: null
+  value:
+    active: true
+    dataset: merged-B2in-Z-R
+    dtype: int64
+    file: decision_tree
+    id: decision_tree_1
+    log_data: true
+    model_name: DF 1
+    run_name: Decision Tree 1
+    save_model: false
+    shuffle: true
+    y_labels: target

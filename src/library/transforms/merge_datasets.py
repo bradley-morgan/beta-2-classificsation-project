@@ -14,12 +14,15 @@ Merge Datasets Transfrom merges all datasets together into one
 """
 
 
-class Transform:
+class MergeDatasets:
 
     def __init__(self, config):
         self.config = config
 
-    def __call__(self, datasets: dict) -> dict:
+    def __call__(self, datasetComplier):
+
+        datasets = datasetComplier.datasets
+
         merge_all = self.config["merge_all"]
         merge_all_name = self.config["merge_all_name"]
         groups = self.config["groups"]
@@ -49,4 +52,5 @@ class Transform:
 
             out_dataset[merge_all_name] = {'data': merged_df}
 
-        return out_dataset
+        datasetComplier.datasets = out_dataset
+        return datasetComplier

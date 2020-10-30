@@ -45,7 +45,6 @@ class DatasetCompiler():
         self.notes = self.config["notes"]
         self.log_data = self.config["log_data"]
         self.src = path(self.config["src"])
-        self.transform_config = self.config["transforms"]
         self.stats_config = self.config["stats"]
         self.y_labels = self.config["labels"]
         self.test_size = self.config["test_size"]
@@ -53,16 +52,10 @@ class DatasetCompiler():
 
         # default attributes
         self.datasets = {}
-        self.transforms = []
-        self.transforms_flag = False
         self.image_saver = ImageSaver()
         self.run = None
 
-        # Hidden Attributes
-        self.__transform_dir__ = path('library/transforms')
-
         # initializer functions
-        self.__init_transforms__()
         self.init_run()
 
     def init_run(self):
@@ -94,13 +87,6 @@ class DatasetCompiler():
 
                 self.datasets[dataset_name] = {'data': data}
 
-    def save(self):
-        pass
-
-    def transform(self):
-        for transform in self.transforms:
-            self.datasets = transform(self.datasets)
-        self.transforms_flag = True
 
     def add_feature(self, feature_name: str, feature: pd.Series, names=None):
         """
@@ -268,8 +254,6 @@ class DatasetCompiler():
             # Loop over all datasets
             df_names = self.datasets.keys()
 
-        self.run.log({f'Transforms Applied': list(self.transform_config.keys())})
-
         for name in df_names:
             dataset = self.datasets[name]
 
@@ -309,34 +293,13 @@ class DatasetCompiler():
                                   format='png')
             plt.clf()
             
-            wandb.log({f'{name} Feature - Class Table': wandb.Table(dataframe=dataset["feature_table"])})
+            self.run.log({f'{name} Feature - Class Table': wandb.Table(dataframe=dataset["feature_table"])})
 
     def terminate(self):
         self.run.finish()
 
     def len(self, name:str) -> int:
         return len(self.datasets[name]["data"])
-
-    def __init_transforms__(self):
-        """
-        Checks that user-set transforms exist as files in the transform folder
-        If it exists it then load and initializes the transform
-        :return:
-        """
-        transform_files = os.listdir(self.__transform_dir__)
-        transform_files = [file for file in transform_files if file.endswith('.py')]
-
-        user_transform_files = self.transform_config.keys()
-
-        transforms = []
-        for user_transform in user_transform_files:
-            if f'{user_transform}.py' in transform_files:
-                plugin = importlib.import_module(f'{user_transform}', package=self.__transform_dir__)
-                plugin = plugin.Transform(self.transform_config[user_transform])
-                transforms.append(plugin)
-
-        self.transforms = transforms
-
 
 
 if __name__ == "__main__":
