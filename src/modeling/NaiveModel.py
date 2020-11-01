@@ -8,16 +8,15 @@ import wandb
 from tqdm import tqdm
 
 
-class Model:
+class NaiveModel:
 
     def __init__(self, config, project):
         # setup
         self.project = project
-
         self.config = config
         self.run = None
         self.image_saver = ImageSaver()
-        self.log_data = self.config["setup"]["log"]
+        self.log_data = self.config["setup"]["log_data"]
 
 
         # Model agnostic attributes

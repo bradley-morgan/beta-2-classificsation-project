@@ -69,7 +69,6 @@ class DatasetCompiler():
                                   reinit=True,
                                   )
 
-
     def load(self):
 
         folder_list = os.listdir(self.src)
@@ -86,7 +85,6 @@ class DatasetCompiler():
                 dataset_name = f'{folder}-{file_name[0]}'
 
                 self.datasets[dataset_name] = {'data': data}
-
 
     def add_feature(self, feature_name: str, feature: pd.Series, names=None):
         """

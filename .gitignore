@@ -139,5 +139,5 @@ data/
 
 # weights and bias logs
 src/wandb
- src/Experiments/wandb/
+src/Experiments/wandb
 

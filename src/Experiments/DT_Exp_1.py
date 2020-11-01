@@ -1,17 +1,26 @@
 from src.modeling.DecisionTree import DecisionTree
+from src.modeling.NaiveModel import NaiveModel
+from src.modeling.RandomForest import RandomForest
 from src.processing.DatasetCompiler import DatasetCompiler
 from src.library.transforms.merge_datasets import MergeDatasets
 from src.library.transforms.change_nans import ChangeNans
-import pandas as pd
-import wandb
+from src.library.transforms.drop_nans import DropNans
 
-project = 'test run'
-datasetName = 'merged-B2in-Z-R'
+
+PROJECT = 'beta-2-classification-project'
+DATA_NAME = 'merged-B2in-Z-R'
+SHARED_FEATURES_DATA_NAME = 'B2in'
+
+K_FOLDS = 10
+N_REPEATS = 100
+FEATURE_REPEATES = 100
+N_JOBS = 5
+LOG = True
 
 datasetConfig = {
     'src': '../data/raw',
     'name': 'dataset test',
-    'log_data': True,
+    'log_data': LOG,
     'labels': 'target',
     'notes': 'Data contains B2in, Z, R and Merged datasets',
     'test_size': 0.1,
@@ -21,49 +30,271 @@ datasetConfig = {
     'transforms': {
         'merge_datasets': dict(
             merge_all=True,
-            merge_all_name=datasetName,
+            merge_all_name=DATA_NAME,
             groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
             group_names=['B2in', 'R', 'Z']
         ),
         'change_nans': dict(
             value=0
+        ),
+        'drop_nans': dict(
+            target_datasets=['B2in', 'R', 'Z']
         )
-        # 'drop_nans': dict(
-        #     target_datasets=['B2in', 'R', 'Z']
-        # )
     }
 }
 
-decisionTreeConfig = {
+CARTConfig1 = {
         'setup': dict(
             active=True,
-            file="decision_tree",
-            log_data=True,
+            log_data=LOG,
             id="decision_tree_1",
             run_name='Decision Tree 1',
             model_name="DF 1",
-            dataset=datasetName,
+            dataset=DATA_NAME,
             y_labels="target",
             shuffle=True,
             dtype='int64',
             save_model=False
         ),
         'models': dict(
-            n_jobs=4,
-            n_repeats=3,
-            k_folds=2,
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
             class_names=['ant', 'ag'],
             criterion='gini',
             splitter='best',
             max_depth=None,
             max_features=None,
+            feature_importance_repeats=FEATURE_REPEATES,
             scorer="Matthews Correlation Coefficient"
         )
 }
 
-dataset = DatasetCompiler(config=datasetConfig, project=project)
+CARTConfig2 = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="decision_tree_2",
+            run_name='Decision Tree 2',
+            model_name="DF 2",
+            dataset=DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            splitter='best',
+            max_depth=3,
+            max_features=None,
+            feature_importance_repeats=FEATURE_REPEATES,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+CARTConfig3 = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="decision_tree_3",
+            run_name='Decision Tree 3',
+            model_name="DF 3",
+            dataset=DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            splitter='best',
+            max_depth=6,
+            max_features=None,
+            feature_importance_repeats=1,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+CARTConfigSHARED = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="decision_tree_SHAQRED",
+            run_name='Decision Tree SHARED',
+            model_name="DF SHARED",
+            dataset=SHARED_FEATURES_DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            splitter='best',
+            max_depth=None,
+            max_features=None,
+            feature_importance_repeats=FEATURE_REPEATES,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+NaiveModel1 = {
+    'setup': dict(
+        active=False,
+        log_data=LOG,
+        id="naive-majority",
+        run_name='naive model 1',
+        model_name="naive models random class",
+        dataset=DATA_NAME,
+        y_labels="target",
+        shuffle=True,
+        dtype='int64'
+    ),
+    'models': dict(
+        k_folds=K_FOLDS,
+        n_repeats=N_REPEATS,
+        model_type="majority",
+        scorer="Matthews Correlation Coefficient"
+    )
+}
+
+NaiveModel2 = {
+    'setup': dict(
+        active=False,
+        log_data=LOG,
+        id="naive-minority",
+        run_name='naive model 2',
+        model_name="naive models random class",
+        dataset=DATA_NAME,
+        y_labels="target",
+        shuffle=True,
+        dtype='int64'
+    ),
+    'models': dict(
+        k_folds=K_FOLDS,
+        n_repeats=N_REPEATS,
+        model_type="minority",
+        scorer="Matthews Correlation Coefficient"
+    )
+}
+NaiveModel3 = {
+    'setup': dict(
+        active=False,
+        log_data=LOG,
+        id="naive-random",
+        run_name='naive model 3',
+        model_name="naive models random class",
+        dataset=DATA_NAME,
+        y_labels="target",
+        shuffle=True,
+        dtype='int64'
+    ),
+    'models': dict(
+        k_folds=K_FOLDS,
+        n_repeats=N_REPEATS,
+        model_type="random",
+        scorer="Matthews Correlation Coefficient"
+    )
+}
+
+RFCConfig1 = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="RFC_1",
+            run_name='RFC 1',
+            model_name="RFC 1",
+            dataset=DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            max_features='auto',
+            bootstrap=True,
+            n_estimators=100,
+            feature_importance_repeats=1,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+RFCConfig2 = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="RFC_2",
+            run_name='RFC 2',
+            model_name="RFC 2",
+            dataset=DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            max_features='auto',
+            bootstrap=True,
+            n_estimators=1,
+            feature_importance_repeats=1,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+RFCConfigSHARED = {
+        'setup': dict(
+            active=True,
+            log_data=LOG,
+            id="RFC_SHARED",
+            run_name='RFC SHARED',
+            model_name="RFC SHRED",
+            dataset=SHARED_FEATURES_DATA_NAME,
+            y_labels="target",
+            shuffle=True,
+            dtype='int64',
+            save_model=False
+        ),
+        'models': dict(
+            n_jobs=N_JOBS,
+            n_repeats=N_REPEATS,
+            k_folds=K_FOLDS,
+            class_names=['ant', 'ag'],
+            criterion='gini',
+            max_features='auto',
+            bootstrap=True,
+            n_estimators=100,
+            feature_importance_repeats=1,
+            scorer="Matthews Correlation Coefficient"
+        )
+}
+
+dataset = DatasetCompiler(config=datasetConfig, project=PROJECT)
 merge_datasets = MergeDatasets(config=datasetConfig["transforms"]["merge_datasets"])
 change_nans = ChangeNans(config=datasetConfig["transforms"]["change_nans"])
+drop_nans = DropNans(config=datasetConfig["transforms"]["drop_nans"])
 
 dataset.load()
 dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
@@ -74,39 +305,111 @@ dataset = merge_datasets(datasetComplier=dataset)
 dataset.statistics()
 dataset.log()
 dataset.terminate()
+dataset_shared_features_only = drop_nans(dataset)
 dataset = change_nans(dataset)
 
-model = DecisionTree(config=decisionTreeConfig, project=project)
+# #                           CART MODELS
+print("Processing CART Models...")
+#
+# # CART Model 1
+model = DecisionTree(config=CARTConfig1, project=PROJECT)
+model.validate(dataset=dataset)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train(datasetCompiler=dataset, target_dataset=DATA_NAME)
+model.log_train()
+model.terminate()
+
+# # CART Model 2
+model = DecisionTree(config=CARTConfig2, project=PROJECT)
+model.validate(dataset=dataset)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train(datasetCompiler=dataset, target_dataset=DATA_NAME)
+model.log_train()
+model.terminate()
+
+# # CART Model 3
+model = DecisionTree(config=CARTConfig3, project=PROJECT)
+model.validate(dataset=dataset)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train(datasetCompiler=dataset, target_dataset=DATA_NAME)
+model.log_train()
+model.terminate()
+
+# #                               NAIVE MODELS
+print("Processing NAIVE Models...")
+#
+# NAIVE Model 1
+model = NaiveModel(config=NaiveModel1, project=PROJECT)
+model.validate(datasetCompiler=dataset)
+model.evaluate()
+model.log()
+model.terminate()
+#
+# # NAIVE Model 2
+model = NaiveModel(config=NaiveModel2, project=PROJECT)
+model.validate(datasetCompiler=dataset)
+model.evaluate()
+model.log()
+model.terminate()
+
+# # NAIVE Model 3
+model = NaiveModel(config=NaiveModel3, project=PROJECT)
+model.validate(datasetCompiler=dataset)
+model.evaluate()
+model.log()
+model.terminate()
+
+#                               RFC MODELS
+print("Processing RFC Models...")
+# RFC Model 1
+model = RandomForest(config=RFCConfig1, project=PROJECT)
 model.validate(dataset=dataset)
 model.evaluate_validation()
 model.log_validation()
 model.train()
 model.evaluate_train()
 model.log_train()
+model.terminate()
 
-split_nodes = model.final_model_split_node_features
+# RFC Model 2
+model = RandomForest(config=RFCConfig2, project=PROJECT)
+model.validate(dataset=dataset)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train()
+model.log_train()
+model.terminate()
 
-tree_feature_list = []
-for node in split_nodes:
-    feature_name = dataset.datasets[datasetName]["feature_table"].iloc[node]["feature_name"]
+#                               SHARED FEATURES ONLY
 
-    keys = list(dataset.datasets)
-    keys.remove(datasetName)
+print("Processing Models on Shared Features Only...")
 
-    for key in keys:
-        feature_table = dataset.datasets[key]["feature_table"]
-        x = feature_table[feature_table["feature_name"] == feature_name].copy(deep=True)
+model = RandomForest(config=RFCConfigSHARED, project=PROJECT)
+model.validate(dataset=dataset_shared_features_only)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train()
+model.log_train()
+model.terminate()
 
-        if len(x) > 0:
-            x["dataset"] = key
-            tree_feature_list.append(x)
-
-
-tree_feature_table = pd.concat(tree_feature_list)
-model.run.log({'Tree Split Nodes Table': wandb.Table(dataframe=tree_feature_table)})
-
+model = DecisionTree(config=CARTConfigSHARED, project=PROJECT)
+model.validate(dataset=dataset_shared_features_only)
+model.evaluate_validation()
+model.log_validation()
+model.train()
+model.evaluate_train(datasetCompiler=dataset, target_dataset=DATA_NAME)
+model.log_train()
 model.terminate()
 
 
-a = 0
+
+
 

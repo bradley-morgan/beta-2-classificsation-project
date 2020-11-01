@@ -1,4 +1,4 @@
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from scipy.stats import sem
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import confusion_matrix, matthews_corrcoef, make_scorer
@@ -15,7 +15,7 @@ import os
 from joblib import dump
 
 
-class DecisionTree:
+class RandomForest:
 
     def __init__(self, config, project):
 
@@ -42,9 +42,9 @@ class DecisionTree:
         self.k_folds = self.config["models"]["k_folds"]
         self.class_names = self.config["models"]["class_names"]
         self.criterion = self.config["models"]["criterion"]
-        self.splitter = self.config["models"]["splitter"]
-        self.max_depth = self.config["models"]["max_depth"]
+        self.n_estimators = self.config["models"]["n_estimators"]
         self.max_features = self.config["models"]["max_features"]
+        self.bootstrap = self.config["models"]["bootstrap"]
         self.feature_importance_repeats = self.config["models"]["feature_importance_repeats"]
 
         # Data Attributes
@@ -69,7 +69,6 @@ class DecisionTree:
         self.final_model_split_node_features = None
         self.final_train_feature_importance = None
         self.final_test_feature_importance = None
-        self.final_tree_feature_table = None
 
 
         # Hidden attributes
@@ -106,11 +105,12 @@ class DecisionTree:
                     train_y, val_y = self.y_train[train_idx], self.y_train[test_idx]
 
                     # Fit and Validate models then generate confusion matrix
-                    model = DecisionTreeClassifier(
+                    model = RandomForestClassifier(
                         criterion=self.criterion,
-                        splitter=self.splitter,
-                        max_depth=self.max_depth,
-                        max_features=self.max_features
+                        n_estimators=self.n_estimators,
+                        max_features=self.max_features,
+                        bootstrap=self.bootstrap,
+                        n_jobs=self.n_jobs
                     )
                     model.fit(train_x, train_y)
                     y_preds = model.predict(val_x)
@@ -176,11 +176,12 @@ class DecisionTree:
             Once models has been a validated we can train a single models on the
             The entire dastaset which we will use for further testing and prediction
         """
-        model = DecisionTreeClassifier(
+        model = RandomForestClassifier(
             criterion=self.criterion,
-            splitter=self.splitter,
-            max_depth=self.max_depth,
-            max_features=self.max_features
+            n_estimators=self.n_estimators,
+            max_features=self.max_features,
+            bootstrap=self.bootstrap,
+            n_jobs=self.n_jobs
         )
         model.fit(self.x_train, self.y_train)
         y_preds = model.predict(self.x_test)
@@ -199,14 +200,6 @@ class DecisionTree:
             self.save()
 
     def log_train(self):
-        # Plots for Final trained models
-        # Plot the best tree from K-fold experiments
-        # TODO Refactor for training
-        self.image_saver.save_graphviz(model=self.final_model,
-                                       run=self.run,
-                                       graph_name=f'Final Trained {self.model_name}: Tree Structure',
-                                       feature_names=self.feature_names,
-                                       class_names=self.class_names)
 
         self.run.log({"Trained confusion matrices on Test set": self.final_confusion_matrix})
         self.run.log({'Trained performance score on test set': self.final_performance_score})
@@ -223,17 +216,15 @@ class DecisionTree:
 
         self.run.log({'Feature Importance on Training Set': wandb.Table(dataframe=self.final_train_feature_importance)})
         self.run.log({'Feature Importance on Test Set': wandb.Table(dataframe=self.final_test_feature_importance)})
-        self.run.log({'Decision Tree Split Nodes': wandb.Table(dataframe=self.final_tree_feature_table)})
 
 
-    def evaluate_train(self, datasetCompiler, target_dataset):
+    def evaluate_train(self):
 
         # Get feature importance for training data
         self.feature_importance(mode='train')
         # Feature importance for test data
         self.feature_importance(mode='test')
 
-        self.extract_tree_features(datasetCompiler, target_dataset)
 
     def feature_importance(self, mode):
 
@@ -272,54 +263,6 @@ class DecisionTree:
             self.final_train_feature_importance = pd.DataFrame.from_dict(feature_importance_table)
         elif mode == 'test':
             self.final_test_feature_importance = pd.DataFrame.from_dict(feature_importance_table)
-
-    def extract_tree_features(self, datasetCompiler, target_dataset):
-        # Get Tree data
-        n_nodes = self.final_model.tree_.node_count
-        children_left = self.final_model.tree_.children_left
-        children_right = self.final_model.tree_.children_right
-        feature = self.final_model.tree_.feature
-
-        node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
-        is_leaves = np.zeros(shape=n_nodes, dtype=bool)
-        stack = [(0, 0)]  # start with the root node id (0) and its depth (0)
-        while len(stack) > 0:
-            # `pop` ensures each node is only visited once
-            node_id, depth = stack.pop()
-            node_depth[node_id] = depth
-
-            # If the left and right child of a node is not the same we have a split
-            # node
-            is_split_node = children_left[node_id] != children_right[node_id]
-            # If a split node, append left and right children and depth to `stack`
-            # so we can loop through them
-            if is_split_node:
-                stack.append((children_left[node_id], depth + 1))
-                stack.append((children_right[node_id], depth + 1))
-            else:
-                is_leaves[node_id] = True
-
-        split_nodes = []
-        for i in range(n_nodes):
-            if not is_leaves[i]:
-                split_nodes.append(feature[i])
-
-        tree_feature_list = []
-        for node in split_nodes:
-            feature_name = datasetCompiler.datasets[target_dataset]["feature_table"].iloc[node]["feature_name"]
-
-            keys = list(datasetCompiler.datasets)
-            keys.remove(target_dataset)
-
-            for key in keys:
-                feature_table = datasetCompiler.datasets[key]["feature_table"]
-                x = feature_table[feature_table["feature_name"] == feature_name].copy(deep=True)
-
-                if len(x) > 0:
-                    x["dataset"] = key
-                    tree_feature_list.append(x)
-
-        self.final_tree_feature_table = pd.concat(tree_feature_list)
 
     def save(self):
         if not self.train_flag:

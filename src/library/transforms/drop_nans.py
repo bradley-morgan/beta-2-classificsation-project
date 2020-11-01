@@ -1,11 +1,12 @@
 
-class Transform:
+class DropNans:
 
     def __init__(self, config):
         self.config = config
 
-    def __call__(self, datasets: dict):
+    def __call__(self, datasetCompiler: dict):
 
+        datasets = datasetCompiler.datasets
         target_datasets = self.config["target_datasets"]
 
         if target_datasets is None or len(target_datasets) == 0:
@@ -23,4 +24,5 @@ class Transform:
                 if datasets[name]["data"].isna().values.any():
                     raise ValueError('drop_nans.py Failed to remove all NaN values')
 
-        return datasets
+        datasetCompiler.datasets = datasets
+        return datasetCompiler
