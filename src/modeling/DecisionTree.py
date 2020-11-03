@@ -144,13 +144,13 @@ class DecisionTree:
         # Log Model scores
         # self.run.log({"Validation performance scores": self.validation_scorer_matrix})
         # self.run.log({"Validation Mean performance score": self.validation_mean_performance_score})
-        plt.plot(self.validation_scorer_matrix, marker='.', linewidth=2.0)
+        plt.plot(self.validation_scorer_matrix, linewidth=2.0)
         plt.title(
             f"Validation MCC Model Performance: Mean score={np.around(self.validation_mean_performance_score, 3)} Std Error={np.around(self.validation_standard_error, 3)}")
         plt.xlabel('K Folds')
         plt.ylabel('Score')
         # plt.yticks([-1, -0.5, 0, 0.5, 1, 1.5])
-        plt.xticks([i for i in range(len(self.validation_scorer_matrix))])
+        # plt.xticks([i for i in range(len(self.validation_scorer_matrix))])
         self.image_saver.save(plot=plt.gcf(),
                               run=self.run,
                               name=f'Validation Model Performance: repeats={self.n_repeats} K-folds={self.k_folds}',

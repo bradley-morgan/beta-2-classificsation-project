@@ -134,11 +134,11 @@ class NaiveModel:
         # Log Model scores
         self.run.log({"performance scores": self.scorer_matrix})
         self.run.log({"global performance score": self.global_score})
-        plt.plot(self.scorer_matrix, marker='.', linewidth=2.0)
+        plt.plot(self.scorer_matrix, linewidth=2.0)
         plt.title(f"MCC Model Performance: Global score = {np.around(self.global_score, 3)}")
         plt.xlabel('K Folds')
         plt.ylabel('Score')
-        plt.xticks([i for i in range(10)])
+        # plt.xticks([i for i in range(10)])
         self.image_saver.save(plot=plt.gcf(),
                               run=self.run,
                               name='model_performance',

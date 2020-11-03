@@ -49,11 +49,13 @@ class DatasetCompiler():
         self.y_labels = self.config["labels"]
         self.test_size = self.config["test_size"]
 
-
         # default attributes
         self.datasets = {}
         self.image_saver = ImageSaver()
         self.run = None
+        self.total_features_across_datasets = None
+        self.total_shared_features_across_datasets = None
+        self.shared_features = None
 
         # initializer functions
         self.init_run()
@@ -159,6 +161,18 @@ class DatasetCompiler():
              '\nthat datasets have been merged to contain all classes in one unified data set.'
              'If not please run merge_datasets')
 
+        b2in = self.datasets["B2in"]["data"]
+        R = self.datasets["R"]["data"]
+        Z = self.datasets["Z"]["data"]
+
+        b2in_cols = set(list(b2in.columns))
+        R_cols = set(list(R.columns))
+        Z_cols = set(list(Z.columns))
+
+        self.total_features_across_datasets = sum([len(b2in_cols), len(Z_cols), len(R_cols)])
+        self.shared_features = set.intersection(b2in_cols, R_cols, Z_cols)
+        self.total_shared_features_across_datasets = len(self.shared_features)
+
         df_names = self.stats_config["names"]
         label_feature_name = self.y_labels
 
@@ -190,6 +204,10 @@ class DatasetCompiler():
                 feature_table = {"feature_name": []}
 
                 for feature in feature_names:
+
+                    if name == "merged-B2in-Z-R":
+                        if feature.startswith("113/OD2 - /1/N"):
+                            a = 0
 
                     feature_table["feature_name"].append(feature)
                     feature_col = dataset[[feature, label_feature_name]]
