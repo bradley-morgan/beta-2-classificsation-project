@@ -32,6 +32,7 @@ datasetConfig = {
         'merge_datasets': dict(
             merge_all=True,
             merge_all_name=DATA_NAME,
+            leave_original_data = True,
             groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
             group_names=['B2in', 'R', 'Z']
         ),
@@ -300,7 +301,7 @@ clean_feature_names = CleanFeatureNames()
 
 dataset.load()
 dataset.remove_feature(feature_name='Ligand_Pose')
-# dataset = clean_feature_names(datasetComplier=dataset)
+dataset = clean_feature_names(datasetComplier=dataset)
 dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
 dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
 dataset = merge_datasets(datasetComplier=dataset)
@@ -308,7 +309,7 @@ dataset = merge_datasets(datasetComplier=dataset)
 
 
 dataset.statistics()
-dataset.log()
+#dataset.log()
 dataset.terminate()
 # dataset_shared_features_only = drop_nans(dataset)
 # dataset = change_nans(dataset)

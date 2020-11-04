@@ -141,3 +141,4 @@ data/
 src/wandb
 src/Experiments/wandb
 
+tmp

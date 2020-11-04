@@ -11,7 +11,7 @@ from src.utils.ImageSaver import ImageSaver
 import wandb
 from tqdm import tqdm
 from warnings import warn
-
+import itertools
 
 """
 Dataset class acts as a single source of truth for all data and is consumed by Model Objects.
@@ -35,7 +35,6 @@ Constructor Arguments
 class DatasetCompiler():
 
     def __init__(self, config, project):
-
 
         # User defined attributes
         self.project = project
@@ -98,13 +97,15 @@ class DatasetCompiler():
             # add to all datasets
             for name in self.datasets.keys():
                 if self.len(name) != len(feature):
-                    raise ValueError(f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
+                    raise ValueError(
+                        f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
                 self.datasets[name]["data"][feature_name] = feature
 
         else:
             for name in names:
                 if self.len(name) != len(feature):
-                    raise ValueError(f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
+                    raise ValueError(
+                        f"Length ({self.len(name)}) of dataset {name} is not equal to length ({len(feature)}) of series {feature_name}")
                 self.datasets[name]["data"][feature_name] = feature
 
     def remove_feature(self, feature_name: str, names=None):
@@ -156,106 +157,186 @@ class DatasetCompiler():
 
     def statistics(self):
 
-        #TODO ASSUMPTION WARNING
+        # TODO ASSUMPTION WARNING
         warn('Statistics method is currently built on the assumption'
              '\nthat datasets have been merged to contain all classes in one unified data set.'
              'If not please run merge_datasets')
 
-        b2in = self.datasets["B2in"]["data"]
-        R = self.datasets["R"]["data"]
-        Z = self.datasets["Z"]["data"]
+        def find_feature_class(feature_set, feature_type, ag_data_set, ant_data_set):
+            feature_list = list(feature_set)
+            feature_class_ant = []
+            feature_class_ag = []
 
-        b2in_cols = set(list(b2in.columns))
-        R_cols = set(list(R.columns))
-        Z_cols = set(list(Z.columns))
+            for feature in feature_list:
+                feature_class_ag.append(True) if feature in ag_data_set else feature_class_ag.append(False)
+                feature_class_ant.append(True) if feature in ant_data_set else feature_class_ant.append(False)
 
-        self.total_features_across_datasets = sum([len(b2in_cols), len(Z_cols), len(R_cols)])
-        self.shared_features = set.intersection(b2in_cols, R_cols, Z_cols)
-        self.total_shared_features_across_datasets = len(self.shared_features)
+                if feature not in ag_data_set or feature not in ant_data_set:
+                    ValueError("Value not found in any dataset")
 
-        df_names = self.stats_config["names"]
-        label_feature_name = self.y_labels
+            return {"features": feature_list,
+                    "Agonist": feature_class_ag,
+                    "antagonist": feature_class_ant,
+                    "feature_type": [feature_type] * len(feature_set)}
 
-        if df_names is None or len(df_names) == 0:
-            # Loop over all datasets
-            df_names = self.datasets.keys()
+        def merge_dicts(dict1, dict2):
+            return {"features": dict1["features"] + dict2["features"],
+                    "Agonist": dict1["Agonist"] + dict2["Agonist"],
+                    "antagonist": dict1["antagonist"] + dict2["antagonist"],
+                    "feature_type": dict1["feature_type"] + dict2["feature_type"]}
 
-        print('\nCalculating Data-set Statistics')
-        with tqdm(total=len(df_names), colour='blue', bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}') as progress_bar:
-            for name in df_names:
-                dataset = self.datasets[name]["data"]
-                feature_names = list(dataset.columns)
-                feature_names.remove(label_feature_name)
 
-                # Sample size
-                sample_size = len(dataset)
+        B2in_data = self.datasets["B2in"]["data"]
+        R_data = self.datasets["R"]["data"]
+        Z_data = self.datasets["Z"]["data"]
 
-                # Feature_size
-                feature_size = len(feature_names)
 
-                #Class balance
-                class_balance = dataset[label_feature_name].value_counts()
-                class_names = list(class_balance.index)
+        B2in = set(list(B2in_data.columns))
+        R = set(list(R_data.columns))
+        Z = set(list(Z_data.columns))
 
-                # shared and unique features table 2D array - feature name, classes
-                # On a feature level individual samples within each feature might have shared features
-                # This is calculated on the assumption that columns with nans means the feature didnt
-                # exist when being merged
-                feature_table = {"feature_name": []}
+        B2in.remove("target")
+        R.remove("target")
+        Z.remove("target")
 
-                for feature in feature_names:
+        # TODO MERGED DATASET
+        x = list(itertools.chain(B2in, R, Z))
+        global_feature_across_datasets = set(x)
+        global_feature_across_datasets_len = len(global_feature_across_datasets)
 
-                    if name == "merged-B2in-Z-R":
-                        if feature.startswith("113/OD2 - /1/N"):
-                            a = 0
+        shared_features_across_datasets = set.intersection(B2in, R, Z)
+        shared_features_across_datasets_len = len(shared_features_across_datasets)
+        shared_feature_table_across_datasets = {"features": shared_features_across_datasets,
+                                                 "feature type": ["shared"] * len(shared_features_across_datasets)}
 
-                    feature_table["feature_name"].append(feature)
-                    feature_col = dataset[[feature, label_feature_name]]
+        unique_features_across_datasets = global_feature_across_datasets.difference(shared_features_across_datasets)
+        unique_features_across_datasets_len = len(unique_features_across_datasets)
+        unique_feature_table_across_datasets = {"features": unique_features_across_datasets,
+                                                 "feature type": ["unique"] * len(unique_features_across_datasets)}
 
-                    for class_name in class_names:
+        feature_table_across_datasets = pd.DataFrame.from_dict({
+            "features": list(shared_feature_table_across_datasets["features"]) + list(unique_feature_table_across_datasets["features"]),
+            "feature_types": list(shared_feature_table_across_datasets["feature type"] + list(unique_feature_table_across_datasets["feature type"]))
+        })
 
-                        class_feature = feature_col[feature_col[label_feature_name] == class_name]
-                        is_nan = class_feature.isna().values.any()
+        # TODO B2in DATASET
+        ag_B2in = set(list(self.datasets["B2in-ag"]["data"].columns))
+        ant_B2in = set(list(self.datasets["B2in-ant"]["data"].columns))
+        ag_B2in.remove("target")
+        ant_B2in.remove("target")
+        B2in_shared_class_features = set.intersection(ag_B2in, ant_B2in)
+        B2in_unquie_class_features = set.symmetric_difference(ag_B2in, ant_B2in)
+        B2in_shared_class_features_len = len(B2in_shared_class_features)
+        B2in_unquie_class_features_len = len(B2in_unquie_class_features)
 
-                        # Flip isNan logic to help understanding. if No Nans detected (False)
-                        # then that means this feature is present for the current class thus (True)
-                        is_class_feature = False if is_nan else True
+        B2in_unique_dict = find_feature_class(B2in_unquie_class_features, "unique", ag_B2in, ant_B2in)
+        B2in_shared_dict = find_feature_class(B2in_shared_class_features, "shared",  ag_B2in, ant_B2in)
+        B2in_feature_table = pd.DataFrame.from_dict(merge_dicts(B2in_unique_dict, B2in_shared_dict))
 
-                        # check if class name exist if so append if not create then append
-                        try:
-                            feature_table[str(class_name)].append(is_class_feature)
-                        except KeyError:
-                            feature_table[str(class_name)] = []
-                            feature_table[str(class_name)].append(is_class_feature)
+        # TODO R DATASET
+        ag_R = set(list(self.datasets["R-ag"]["data"].columns))
+        ant_R = set(list(self.datasets["R-ant"]["data"].columns))
+        ag_R.remove("target")
+        ant_R.remove("target")
+        R_shared_class_features = set.intersection(ag_R, ant_R)
+        R_unquie_class_features = set.symmetric_difference(ag_R, ant_R)
+        R_shared_class_features_len = len(R_shared_class_features)
+        R_unquie_class_features_len = len(R_unquie_class_features)
 
-                # Convert to Pd frame this aint effecient but its quickest way i could think of Feature Table
-                feature_table = pd.DataFrame.from_dict(feature_table)
-                # Shared Features Histogram
-                tmp_feature_table = feature_table.drop(["feature_name"], axis=1)
+        R_unique_dict = find_feature_class(R_unquie_class_features, "unique", ag_R, ant_R)
+        R_shared_dict = find_feature_class(R_shared_class_features, "shared",  ag_R, ant_R)
+        R_feature_table = pd.DataFrame.from_dict(merge_dicts(R_unique_dict, R_shared_dict))
 
-                shared_features = []
-                for classes in tmp_feature_table.itertuples(index=True):
-                    classes = list(classes)
+        # TODO Z DATASET
+        ag_Z = set(list(self.datasets["Z-ag"]["data"].columns))
+        ant_Z = set(list(self.datasets["Z-ant"]["data"].columns))
+        ag_Z.remove("target")
+        ant_Z.remove("target")
+        Z_shared_class_features = set.intersection(ag_Z, ant_Z)
+        Z_unique_class_features = set.symmetric_difference(ag_Z, ant_Z)
+        Z_shared_class_features_len = len(Z_shared_class_features)
+        Z_unique_class_features_len = len(Z_unique_class_features)
 
-                    if all(classes):
-                        shared_features.append('shared')
-                    else:
-                        shared_features.append('not-shared')
+        Z_unique_dict = find_feature_class(Z_unique_class_features, "unique", ag_Z, ant_Z)
+        Z_shared_dict = find_feature_class(Z_shared_class_features, "shared",  ag_Z, ant_Z)
+        Z_feature_table = pd.DataFrame.from_dict(merge_dicts(Z_unique_dict, Z_shared_dict))
 
-                shared = shared_features.count('shared')
-                not_shared = shared_features.count('not-shared')
+        # Calculate class balance
 
-                shared_features = pd.Series(data=shared_features)
-                feature_table["Is Shared"] = shared_features
+        # Log
+        sns.set()
+        self.run.log({'Feature Size Across all Data-sets (B2in, R, Z)': global_feature_across_datasets_len})
+        # self.run.log({f'{name} Feature Size': dataset["feature_size"]})
 
-                self.datasets[name]["sample_size"] = sample_size
-                self.datasets[name]["feature_size"] = feature_size
-                self.datasets[name]["class_balance"] = class_balance
-                self.datasets[name]["feature_table"] = feature_table
-                self.datasets[name]["shared_features"] = shared
-                self.datasets[name]["not_shared_features"] = not_shared
+        # Features Plot
+        plt.bar(
+            x=['shared', 'unique'],
+            height=[shared_features_across_datasets_len, unique_features_across_datasets_len],
+            width=0.8
+        )
+        plt.title(
+            f'Features Shared Across all Classes(Ag, Ant) & Data-sets (B2in, R, Z): Total Features={global_feature_across_datasets_len}')
+        plt.ylabel('Counts')
+        plt.xlabel('Feature Types')
+        self.image_saver.save(plot=plt.gcf(),
+                              run=self.run,
+                              name='Feature Size Across all Data-sets (B2in, R, Z',
+                              format='png')
+        plt.clf()
 
-                progress_bar.update(1)
+        self.run.log({'Shared Features Size Between Antagonist and Agonist for B2in': B2in_shared_class_features_len})
+        self.run.log({'Unique Features Size Between Antagonist and Agonist for B2in': B2in_unquie_class_features_len})
+
+        plt.bar(
+            x=["shared", "unique"],
+            height=[B2in_shared_class_features_len, B2in_unquie_class_features_len],
+            width=0.8
+        )
+        plt.title(f'Features Shared Between Antagonist and Agonist for B2in')
+        plt.ylabel("Counts")
+        plt.xlabel("Feature Types")
+        self.image_saver.save(plot=plt.gcf(),
+                              run=self.run,
+                              name='Plot: Features Shared Between Antagonist and Agonist for B2in',
+                              format='png')
+        plt.clf()
+
+        plt.bar(
+            x=["shared", "unique"],
+            height=[R_shared_class_features_len, R_unquie_class_features_len],
+            width=0.8
+        )
+        plt.title(f'Features Shared Between Antagonist and Agonist for R')
+        plt.ylabel("Counts")
+        plt.xlabel("Feature Types")
+        self.image_saver.save(plot=plt.gcf(),
+                              run=self.run,
+                              name='Plot: Features Shared Between Antagonist and Agonist for R',
+                              format='png')
+        plt.clf()
+
+        plt.bar(
+            x=["shared", "unique"],
+            height=[Z_shared_class_features_len, Z_unique_class_features_len],
+            width=0.8
+        )
+        plt.title(f'Features Shared Between Antagonist and Agonist for Z')
+        plt.ylabel("Counts")
+        plt.xlabel("Feature Types")
+        self.image_saver.save(plot=plt.gcf(),
+                              run=self.run,
+                              name='Plot: Features Shared Between Antagonist and Agonist for Z',
+                              format='png')
+        plt.clf()
+
+        # Plot Tables
+
+        self.run.log({'Feature Table Across All Datasets (B2in, Z, R) ': wandb.Table(dataframe=feature_table_across_datasets)})
+        self.run.log({'Feature Table B2in': wandb.Table(dataframe=B2in_feature_table)})
+        self.run.log({'Feature Table R': wandb.Table(dataframe=R_feature_table)})
+        self.run.log({'Feature Table Z': wandb.Table(dataframe=Z_feature_table)})
+
+
 
     def log(self):
         if not self.log_data:
@@ -294,27 +375,10 @@ class DatasetCompiler():
                                   format='png')
             plt.clf()
 
-            plt.bar(
-                x=['shared', 'not-shared'],
-                height=[dataset["shared_features"], dataset["not_shared_features"]],
-                width=0.8
-            )
-            plt.title(f'{name}: Number of features shared and not shared across all classes')
-            plt.ylabel('Counts')
-            plt.xlabel('Feature type')
-            plt.xticks(class_names)
-            self.image_saver.save(plot=plt.gcf(),
-                                  run=self.run,
-                                  name=f'{name} feature shared',
-                                  format='png')
-            plt.clf()
-            
-            self.run.log({f'{name} Feature - Class Table': wandb.Table(dataframe=dataset["feature_table"])})
-
     def terminate(self):
         self.run.finish()
 
-    def len(self, name:str) -> int:
+    def len(self, name: str) -> int:
         return len(self.datasets[name]["data"])
 
 

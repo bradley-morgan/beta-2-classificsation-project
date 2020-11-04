@@ -25,6 +25,7 @@ class MergeDatasets:
 
         merge_all = self.config["merge_all"]
         merge_all_name = self.config["merge_all_name"]
+        leave_original_data = self.config["leave_original_data"]
         groups = self.config["groups"]
         group_names = self.config["group_names"]
         out_dataset = {}
@@ -39,7 +40,10 @@ class MergeDatasets:
                     data = datasets[df_name]["data"]
                     merged_df = merged_df.append(data, sort=False)
 
-                out_dataset[group_name] = {'data': merged_df}
+                if leave_original_data:
+                    datasets[group_name] = {'data': merged_df}
+                else:
+                    out_dataset[group_name] = {'data': merged_df}
 
         if merge_all:
             keys = list(datasets.keys())
@@ -50,7 +54,14 @@ class MergeDatasets:
                 data = datasets[name]["data"]
                 merged_df = merged_df.append(data, sort=False)
 
-            out_dataset[merge_all_name] = {'data': merged_df}
+            if leave_original_data:
+                datasets[merge_all_name] = {'data': merged_df}
+            else:
+                out_dataset[merge_all_name] = {'data': merged_df}
 
-        datasetComplier.datasets = out_dataset
+        if leave_original_data:
+            datasetComplier.datasets = datasets
+        else:
+            datasetComplier.datasets = out_dataset
+
         return datasetComplier
