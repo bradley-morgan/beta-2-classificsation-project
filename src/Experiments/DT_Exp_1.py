@@ -6,6 +6,7 @@ from transforms.merge_datasets import MergeDatasets
 from transforms.change_nans import ChangeNans
 from transforms.drop_nans import DropNans
 from transforms.clean_feature_names import CleanFeatureNames
+from transforms.remove_features import RemoveFeatures
 
 
 PROJECT = 'test'
@@ -36,6 +37,9 @@ datasetConfig = {
             leave_original_data = True,
             groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
             group_names=['B2in', 'R', 'Z']
+        ),
+        'remove_features': dict(
+            search_params = ["Clash", "Proximal"]
         ),
         'change_nans': dict(
             value=0
@@ -299,15 +303,15 @@ merge_datasets = MergeDatasets(config=datasetConfig["transforms"]["merge_dataset
 change_nans = ChangeNans(config=datasetConfig["transforms"]["change_nans"])
 drop_nans = DropNans(config=datasetConfig["transforms"]["drop_nans"])
 clean_feature_names = CleanFeatureNames()
+remove_features = RemoveFeatures(config=datasetConfig["transforms"]["remove_features"])
 
 dataset.load()
 dataset.remove_feature(feature_name='Ligand_Pose')
 dataset = clean_feature_names(datasetComplier=dataset)
 dataset.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
 dataset.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
+dataset = remove_features(datasetCompiler=dataset)
 dataset = merge_datasets(datasetComplier=dataset)
-
-
 
 dataset.statistics()
 #dataset.log()
