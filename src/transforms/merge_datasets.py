@@ -25,6 +25,7 @@ class MergeDatasets:
 
         merge_all = self.config["merge_all"]
         merge_all_name = self.config["merge_all_name"]
+        merge_all_exclude = self.config["merge_all_exclude"]
         leave_original_data = self.config["leave_original_data"]
         groups = self.config["groups"]
         group_names = self.config["group_names"]
@@ -47,6 +48,7 @@ class MergeDatasets:
 
         if merge_all:
             keys = list(datasets.keys())
+            keys = [key for key in keys if key not in merge_all_exclude]
 
             f_key = keys.pop()
             merged_df = datasets[f_key]["data"]

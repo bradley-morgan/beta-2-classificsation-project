@@ -185,11 +185,30 @@ class DatasetCompiler():
                     "antagonist": dict1["antagonist"] + dict2["antagonist"],
                     "feature_type": dict1["feature_type"] + dict2["feature_type"]}
 
+        def plot_class_balance(data, title):
+            plt.bar(
+                x=['0', '1'],
+                height=[data.loc[0], data.loc[1]],
+                width=0.8
+            )
+            plt.title(title)
+            plt.ylabel('Counts')
+            plt.xlabel('class labels (0=ant, 1=ag)')
+            self.image_saver.save(plot=plt.gcf(),
+                                  run=self.run,
+                                  name=title,
+                                  format='png')
+            plt.clf()
+
 
         B2in_data = self.datasets["B2in"]["data"]
         R_data = self.datasets["R"]["data"]
         Z_data = self.datasets["Z"]["data"]
 
+        B2in_class_balance = B2in_data["target"].value_counts()
+        R_class_balance = R_data["target"].value_counts()
+        Z_class_balance = Z_data["target"].value_counts()
+        merged_class_balance = self.datasets["merged-B2in-Z-R"]["data"]["target"].value_counts()
 
         B2in = set(list(B2in_data.columns))
         R = set(list(R_data.columns))
@@ -336,6 +355,11 @@ class DatasetCompiler():
         self.run.log({'Feature Table R': wandb.Table(dataframe=R_feature_table)})
         self.run.log({'Feature Table Z': wandb.Table(dataframe=Z_feature_table)})
 
+        # Plot Class Balances
+        plot_class_balance(B2in_class_balance, 'B2in Class Balance')
+        plot_class_balance(R_class_balance, 'R Class Balance')
+        plot_class_balance(Z_class_balance, 'Z Class Balance')
+        plot_class_balance(merged_class_balance, 'Class Balance Across All Datasets(B2in, Z, R)')
 
 
     def log(self):

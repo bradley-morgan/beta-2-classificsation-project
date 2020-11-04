@@ -32,6 +32,7 @@ datasetConfig = {
         'merge_datasets': dict(
             merge_all=True,
             merge_all_name=DATA_NAME,
+            merge_all_exclude=['B2in-ant', 'B2in-ag', 'R-ant', 'R-ag', 'Z-ant', 'Z-ag'],
             leave_original_data = True,
             groups=[('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')],
             group_names=['B2in', 'R', 'Z']
