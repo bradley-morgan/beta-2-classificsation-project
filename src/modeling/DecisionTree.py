@@ -120,7 +120,7 @@ class DecisionTree:
 
                     # Calculate matthew correlation coeffcient
                     score = matthews_corrcoef(y_true=val_y, y_pred=y_preds)
-                    self.validation_scorer_matrix.append(score)
+                    self.validation_scorer_matrix.append(np.round(score, decimals=3))
 
                 progress_bar.update(1)
 

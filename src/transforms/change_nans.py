@@ -2,7 +2,7 @@
 class ChangeNans:
 
     def __init__(self, config):
-        self.config = config
+        self.value = config['value']
 
     def __call__(self, datasetCompiler):
 
@@ -11,7 +11,8 @@ class ChangeNans:
         keys = list(datasets.keys())
 
         for name in keys:
-            datasets[name]["data"].fillna(self.config['value'], inplace=True)
+            datasets[name]["data"].fillna(self.value, inplace=True)
 
         datasetCompiler.datasets = datasets
+        datasetCompiler.applied_transforms.append("Change_Nans")
         return datasetCompiler

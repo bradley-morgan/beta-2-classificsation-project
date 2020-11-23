@@ -4,7 +4,7 @@ class DropNans:
     def __init__(self, config):
         self.config = config
 
-    def __call__(self, datasetCompiler: dict):
+    def __call__(self, datasetCompiler):
 
         datasets = datasetCompiler.datasets
         target_datasets = self.config["target_datasets"]
@@ -25,4 +25,5 @@ class DropNans:
                     raise ValueError('drop_nans.py Failed to remove all NaN values')
 
         datasetCompiler.datasets = datasets
+        datasetCompiler.applied_transforms.append("drop_nans")
         return datasetCompiler

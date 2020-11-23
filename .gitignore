@@ -130,6 +130,7 @@ dmypy.json
 
 # env
 Beta-2-env
+b2ar-env
 
 # Data folder
 data/

@@ -1,6 +1,9 @@
 
 class CleanFeatureNames:
 
+    def __init__(self, config):
+        self.exceptions = config['exceptions']
+
     def __call__(self, datasetComplier):
 
         datasets = datasetComplier.datasets
@@ -9,6 +12,10 @@ class CleanFeatureNames:
         for key in keys:
 
             for col_name in datasets[key]["data"].columns:
+
+                if col_name in self.exceptions:
+                    break
+
                 new_col_names = col_name
                 isLetterA = new_col_names.startswith("A")
 
@@ -25,6 +32,7 @@ class CleanFeatureNames:
                 datasets[key]["data"].rename({col_name: new_col_names}, axis=1, inplace=True)
 
         datasetComplier.datasets = datasets
+        datasetComplier.applied_transforms.append("Clean Features")
         return datasetComplier
 
 

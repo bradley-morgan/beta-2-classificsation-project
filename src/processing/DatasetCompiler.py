@@ -34,42 +34,18 @@ Constructor Arguments
 
 class DatasetCompiler():
 
-    def __init__(self, config, project):
+    def __init__(self, src, y_labels, test_size):
 
 
         # User defined attributes
-        self.project = project
-
-        self.config = config
-        self.name = self.config["name"]
-        self.notes = self.config["notes"]
-        self.log_data = self.config["log_data"]
-        self.src = path(self.config["src"])
-        self.stats_config = self.config["stats"]
-        self.y_labels = self.config["labels"]
-        self.test_size = self.config["test_size"]
+        self.src = path(src)
+        self.y_labels = y_labels
+        self.test_size = test_size
 
         # default attributes
         self.datasets = {}
-        self.image_saver = ImageSaver()
-        self.run = None
-        self.total_features_across_datasets = None
-        self.total_shared_features_across_datasets = None
-        self.shared_features = None
+        self.applied_transforms = []
 
-        # initializer functions
-        self.init_run()
-
-    def init_run(self):
-        # setup
-        if self.log_data:
-            self.run = wandb.init(project=self.project,
-                                  name=self.name,
-                                  id='dataset1011001',
-                                  notes=self.notes,
-                                  config=self.config,
-                                  reinit=True,
-                                  )
 
     def load(self):
 
@@ -79,6 +55,7 @@ class DatasetCompiler():
 
         for folder in folder_list:
             file_list = os.listdir(os.path.join(self.src, folder))
+            file_list = [file for file in file_list if file.endswith('.csv')]
 
             file_list = remove(file_list, '.DS_Store')
             for file in file_list:
@@ -154,165 +131,6 @@ class DatasetCompiler():
         dataFrame = dataFrame.astype(dtype)
         return dataFrame
 
-    def statistics(self):
-
-        #TODO ASSUMPTION WARNING
-        warn('Statistics method is currently built on the assumption'
-             '\nthat datasets have been merged to contain all classes in one unified data set.'
-             'If not please run merge_datasets')
-
-        b2in = self.datasets["B2in"]["data"]
-        R = self.datasets["R"]["data"]
-        Z = self.datasets["Z"]["data"]
-
-        b2in_cols = set(list(b2in.columns))
-        R_cols = set(list(R.columns))
-        Z_cols = set(list(Z.columns))
-
-        self.total_features_across_datasets = sum([len(b2in_cols), len(Z_cols), len(R_cols)])
-        self.shared_features = set.intersection(b2in_cols, R_cols, Z_cols)
-        self.total_shared_features_across_datasets = len(self.shared_features)
-
-        df_names = self.stats_config["names"]
-        label_feature_name = self.y_labels
-
-        if df_names is None or len(df_names) == 0:
-            # Loop over all datasets
-            df_names = self.datasets.keys()
-
-        print('\nCalculating Data-set Statistics')
-        with tqdm(total=len(df_names), colour='blue', bar_format='{l_bar}{bar:100}{r_bar}{bar:-100b}') as progress_bar:
-            for name in df_names:
-                dataset = self.datasets[name]["data"]
-                feature_names = list(dataset.columns)
-                feature_names.remove(label_feature_name)
-
-                # Sample size
-                sample_size = len(dataset)
-
-                # Feature_size
-                feature_size = len(feature_names)
-
-                #Class balance
-                class_balance = dataset[label_feature_name].value_counts()
-                class_names = list(class_balance.index)
-
-                # shared and unique features table 2D array - feature name, classes
-                # On a feature level individual samples within each feature might have shared features
-                # This is calculated on the assumption that columns with nans means the feature didnt
-                # exist when being merged
-                feature_table = {"feature_name": []}
-
-                for feature in feature_names:
-
-                    if name == "merged-B2in-Z-R":
-                        if feature.startswith("113/OD2 - /1/N"):
-                            a = 0
-
-                    feature_table["feature_name"].append(feature)
-                    feature_col = dataset[[feature, label_feature_name]]
-
-                    for class_name in class_names:
-
-                        class_feature = feature_col[feature_col[label_feature_name] == class_name]
-                        is_nan = class_feature.isna().values.any()
-
-                        # Flip isNan logic to help understanding. if No Nans detected (False)
-                        # then that means this feature is present for the current class thus (True)
-                        is_class_feature = False if is_nan else True
-
-                        # check if class name exist if so append if not create then append
-                        try:
-                            feature_table[str(class_name)].append(is_class_feature)
-                        except KeyError:
-                            feature_table[str(class_name)] = []
-                            feature_table[str(class_name)].append(is_class_feature)
-
-                # Convert to Pd frame this aint effecient but its quickest way i could think of Feature Table
-                feature_table = pd.DataFrame.from_dict(feature_table)
-                # Shared Features Histogram
-                tmp_feature_table = feature_table.drop(["feature_name"], axis=1)
-
-                shared_features = []
-                for classes in tmp_feature_table.itertuples(index=True):
-                    classes = list(classes)
-
-                    if all(classes):
-                        shared_features.append('shared')
-                    else:
-                        shared_features.append('not-shared')
-
-                shared = shared_features.count('shared')
-                not_shared = shared_features.count('not-shared')
-
-                shared_features = pd.Series(data=shared_features)
-                feature_table["Is Shared"] = shared_features
-
-                self.datasets[name]["sample_size"] = sample_size
-                self.datasets[name]["feature_size"] = feature_size
-                self.datasets[name]["class_balance"] = class_balance
-                self.datasets[name]["feature_table"] = feature_table
-                self.datasets[name]["shared_features"] = shared
-                self.datasets[name]["not_shared_features"] = not_shared
-
-                progress_bar.update(1)
-
-    def log(self):
-        if not self.log_data:
-            warn("Log Warning: Log has not run and is set to False thus no run object is available for logging")
-            return
-
-        sns.set()
-        # Use .loc[0] for ant and .loc[1] for ag when getting class balance from series
-        df_names = self.stats_config["names"]
-
-        if df_names is None or len(df_names) == 0:
-            # Loop over all datasets
-            df_names = self.datasets.keys()
-
-        for name in df_names:
-            dataset = self.datasets[name]
-
-            self.run.log({f'{name} Sample Size': dataset["sample_size"]})
-            self.run.log({f'{name} Feature Size': dataset["feature_size"]})
-
-            # Class Balance Plot
-            class_names = list(dataset["class_balance"].index)
-            height = dataset["class_balance"].values
-            plt.bar(
-                x=class_names,
-                height=height,
-                width=0.8
-            )
-            plt.title(f'{name} Class Balance')
-            plt.ylabel('Counts')
-            plt.xlabel('Classes')
-            plt.xticks(class_names)
-            self.image_saver.save(plot=plt.gcf(),
-                                  run=self.run,
-                                  name=f'{name} Class Balance',
-                                  format='png')
-            plt.clf()
-
-            plt.bar(
-                x=['shared', 'not-shared'],
-                height=[dataset["shared_features"], dataset["not_shared_features"]],
-                width=0.8
-            )
-            plt.title(f'{name}: Number of features shared and not shared across all classes')
-            plt.ylabel('Counts')
-            plt.xlabel('Feature type')
-            plt.xticks(class_names)
-            self.image_saver.save(plot=plt.gcf(),
-                                  run=self.run,
-                                  name=f'{name} feature shared',
-                                  format='png')
-            plt.clf()
-            
-            self.run.log({f'{name} Feature - Class Table': wandb.Table(dataframe=dataset["feature_table"])})
-
-    def terminate(self):
-        self.run.finish()
 
     def len(self, name:str) -> int:
         return len(self.datasets[name]["data"])
