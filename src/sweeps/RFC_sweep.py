@@ -45,7 +45,7 @@ wandb.init(
            config=parameters,
            project=parameters['project_name'],
            name=parameters['run_name'],
-           notes=parameters['notes']
+           notes=parameters['notes'],
           )
 config = wandb.config
 
