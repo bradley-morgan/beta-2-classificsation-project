@@ -4,13 +4,8 @@ import importlib
 from src.utils.remove import remove
 from src.utils.set_path import path
 from sklearn.model_selection import train_test_split
-from warnings import warn
-import matplotlib.pyplot as plt
-import seaborn as sns
-from src.utils.ImageSaver import ImageSaver
-import wandb
-from tqdm import tqdm
-from warnings import warn
+from utils.anonymousClass import Obj
+
 
 
 """
@@ -104,12 +99,12 @@ class DatasetCompiler():
             for name in names:
                 self.datasets[name]["data"][feature_name] = pd.Series([item] * self.len(name))
 
-    def provide(self, name, y_labels, dtype=None):
+    def provide(self, name, dtype=None):
         # TODO Out of scope: add the ability to select a range of columns to be x data
         # Flexibility
         dataFrame = self.datasets[name]["data"]
-        y = dataFrame[y_labels].values
-        x = dataFrame.drop(y_labels, axis=1)
+        y = dataFrame[self.y_labels].values
+        x = dataFrame.drop(self.y_labels, axis=1)
         feature_names = list(x.columns)
         x = x.values
 
@@ -117,12 +112,18 @@ class DatasetCompiler():
             x = x.astype(dtype)
             y = y.astype(dtype)
 
-        x_train, x_test, y_train, y_test = train_test_split(x, y,
+        x_train, x_hold_out, y_train, y_hold_out = train_test_split(x, y,
                                                             test_size=self.test_size,
                                                             shuffle=True,
                                                             stratify=y)
 
-        return x_train, x_test, y_train, y_test, feature_names
+        return Obj(
+                    x_train=x_train,
+                    x_hold_out=x_hold_out,
+                    y_train=y_train,
+                    y_hold_out=y_hold_out
+        )
+        # return x_train, x_hold_out, y_train, y_hold_out, feature_names
 
     def get_dataframe(self, name, dtype=None):
 

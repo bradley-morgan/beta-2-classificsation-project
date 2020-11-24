@@ -7,7 +7,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src/sweeps" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/beta-2-env" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.8 (mac)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.8 (beta-2-classificsation-project)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
