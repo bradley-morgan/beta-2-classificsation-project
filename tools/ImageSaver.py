@@ -1,4 +1,4 @@
-from src.utils.set_path import path
+from tools.set_path import path
 from sklearn import tree
 import wandb
 import os

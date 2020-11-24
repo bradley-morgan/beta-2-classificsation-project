@@ -1,5 +1,5 @@
 import wandb
-from src.processing.DatasetCompiler import DatasetCompiler
+from DatasetCompiler import DatasetCompiler
 from transforms.merge_datasets import MergeDatasets
 from transforms.change_nans import ChangeNans
 from transforms.clean_feature_names import CleanFeatureNames
@@ -10,13 +10,13 @@ from numpy import mean
 from numpy import std
 from scipy.stats import sem
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
-from sklearn.metrics import confusion_matrix, matthews_corrcoef, make_scorer
+from sklearn.metrics import matthews_corrcoef, make_scorer
 
 
 parameters = dict(
     project_name='test_optim',
     run_name='test run',
-    src='../data/no-filter',
+    src='data/no-filter',
     y_labels='target',
     test_size=0.1,
     notes='This is test script for rfc sweeps',
@@ -38,7 +38,7 @@ parameters = dict(
     change_nans=dict(
         value=0
     ),
-    k_folds=3,
+    k_folds=10,
     repeats=3,
     criterion='gini',
     n_estimators=100,
@@ -50,7 +50,6 @@ parameters = dict(
 run = wandb.init(
            config=parameters,
            project=parameters['project_name'],
-           name=parameters['run_name'],
            notes=parameters['notes'],
           )
 config = wandb.config
@@ -78,7 +77,7 @@ model = RandomForestClassifier(
 
 score_func = make_scorer(matthews_corrcoef)
 scores = cross_val_score(model, X=data.x_train, y=data.y_train,
-                         scoring=score_func, cv=cv, n_jobs=1)
+                         scoring=score_func, cv=cv, n_jobs=-1)
 
 mean_s = mean(scores)
 std_s = std(scores)
