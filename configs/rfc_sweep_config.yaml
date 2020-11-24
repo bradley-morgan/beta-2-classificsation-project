@@ -1,0 +1,41 @@
+program: RFC_sweep.py
+method: random
+metric:
+    name: Mean
+    goal: maximize
+parameters:
+    n_estimators:
+        distribution: int_uniform
+        max: 1000
+        min: 100
+
+    max_features:
+        distribution: int_uniform
+        max: 137
+        min: 11
+
+    class_weights:
+        values:
+            - "None"
+            - "balanced"
+            - "balanced_subsample"
+
+    max_depth:
+        distribution: int_uniform
+        max: 300
+        min: 1
+
+    min_samples_split:
+        distribution: int_uniform
+        max: 1000
+        min: 2
+
+    min_samples_leaf:
+        distribution: int_uniform
+        max: 1000
+        min: 2
+
+    max_leaf_nodes:
+        distribution: int_uniform
+        max: 1000
+        min: 2
