@@ -1,5 +1,5 @@
 import wandb
-from sklearn.ensemble import RandomForestClassifier
+from imblearn.ensemble import BalancedRandomForestClassifier
 from numpy import mean
 from numpy import std
 from scipy.stats import sem
@@ -17,6 +17,7 @@ wandb.init(
            config=parameters,
            project=parameters['project_name'],
            notes=parameters['notes'],
+           name='Balanced_test',
            allow_val_change=True
           )
 config = wandb.config
@@ -30,14 +31,11 @@ data = DatasetCompiler.load_from_pickle(config.src)
 
 cv = RepeatedStratifiedKFold(n_splits=config.k_folds, n_repeats=config.repeats)
 
-model = RandomForestClassifier(
+model = BalancedRandomForestClassifier(
     n_estimators=config.n_estimators,
     max_features=config.max_features,
     class_weight=config.class_weights,
     max_depth=config.max_depth,
-    min_samples_split=config.min_samples_split,
-    min_samples_leaf=config.min_samples_leaf,
-    max_leaf_nodes=config.max_leaf_nodes
 )
 
 score_func = make_scorer(matthews_corrcoef)
@@ -51,8 +49,3 @@ ste_s = sem(scores)
 print('MCC: Mean=%.3f Standard Deviation=%.3f Standard Error=%.3f' % (mean_s, std_s, ste_s))
 metrics = {'Mean': mean_s, 'Standard Deviation': std_s, 'Standard Error': ste_s}
 wandb.log(metrics)
-
-
-
-
-

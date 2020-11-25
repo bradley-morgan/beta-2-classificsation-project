@@ -6,30 +6,20 @@ metric:
 parameters:
     n_estimators:
         distribution: int_uniform
-        max: 4000
-        min: 2000
+        max: 8000
+        min: 1
 
     max_features:
         distribution: int_uniform
-        max: 100
-        min: 1
-
-    max_depth:
-        distribution: int_uniform
-        max: 4000
-        min: 2000
+        max: 22
+        min: 2
 
     min_samples_split:
         distribution: int_uniform
-        max: 150
+        max: 10
         min: 2
 
     min_samples_leaf:
         distribution: int_uniform
-        max: 100
+        max: 3
         min: 2
-
-    max_leaf_nodes:
-        distribution: int_uniform
-        max: 4000
-        min: 2000

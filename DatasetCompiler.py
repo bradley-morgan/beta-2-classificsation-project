@@ -4,6 +4,13 @@ from tools.remove import remove
 from tools.set_path import path
 from sklearn.model_selection import train_test_split
 from tools.anonymousClass import Obj
+from transforms.merge_datasets import MergeDatasets
+from transforms.change_nans import ChangeNans
+from transforms.clean_feature_names import CleanFeatureNames
+from transforms.remove_features import RemoveFeatures
+from transforms.rename_feature import RenameFeatures
+from configs import get
+import pickle
 
 
 
@@ -136,5 +143,44 @@ class DatasetCompiler():
         return len(self.datasets[name]["data"])
 
 
+    def save_as_pickle(self, data, name: str, dest: str):
+        if not os.path.exists(dest):
+            os.mkdir(dest)
+
+        if not name.endswith('.pickle'):
+            name = f'{name}.pickle'
+
+        with open(os.path.join(dest, name), 'wb') as out_put_file:
+            pickle.dump(data, out_put_file)
+            print(f'Pickle Save Successful for: {dest}')
+
+    @staticmethod
+    def load_from_pickle(file_path):
+
+        if not os.path.exists(file_path):
+            raise FileExistsError(f'File Does not exist: {file_path} try using tools.path')
+
+        with open(file_path, 'rb') as input_put_file:
+            data = pickle.load(input_put_file)
+            print(f'Pickle Load Successful for: {file_path}')
+
+        return data
+
 if __name__ == "__main__":
-    pass
+
+    # Preprocess Data once so It doesnt have to be done
+    # again plus the Hold out set will remain constant
+    config = get.general_config(return_obj=True)
+
+    # Data Preprocessing
+    data_sets = DatasetCompiler(src=config.src, y_labels=config.y_labels, test_size=config.test_size)
+    data_sets.load()
+    data_sets.remove_feature(feature_name='Ligand_Pose2')
+    data_sets = CleanFeatureNames(config.clean_features)(data_sets)
+    data_sets = RenameFeatures(config.rename_features)(data_sets)
+    data_sets = RemoveFeatures(config.remove_features)(data_sets)
+    data_sets = MergeDatasets(config.merge)(data_sets)
+    data_sets = ChangeNans(config.change_nans)(data_sets)
+    data = data_sets.provide('merged-3sn6-4lde-5jqh', 'int64')
+    data_sets.save_as_pickle(data, dest='./data/processed', name='clean_data')
+
