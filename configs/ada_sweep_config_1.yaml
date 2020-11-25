@@ -1,0 +1,25 @@
+program: Balanced_AdaBoost_sweep.py
+name: AdaBoost Sweep Round 3
+description: Training & Validation sets represent 98% of data, Final hold out Represents 2%
+method: bayes
+metric:
+  goal: maximize
+  name: Mean
+parameters:
+  algorithm:
+    distribution: categorical
+    values:
+    - SAMME
+    - SAMME.R
+  learning_rate:
+    distribution: uniform
+    max: 1
+    min: 0
+  max_depth_base_estimator:
+    distribution: int_uniform
+    max: 25
+    min: 1
+  n_estimators:
+    distribution: int_uniform
+    max: 2000
+    min: 10

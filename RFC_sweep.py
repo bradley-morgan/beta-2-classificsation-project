@@ -10,8 +10,8 @@ from DatasetCompiler import DatasetCompiler
 
 # Setup
 parameters = get.general_config(return_obj=False)
-parameters['src'] = './data/processed/clean_data.pickle'
-parameters['project_name'] = 'test_changes'
+parameters['src'] = './data/processed/lrg_clean_data.pickle'
+parameters['project_name'] = 'test'
 
 wandb.init(
            config=parameters,
@@ -31,13 +31,7 @@ data = DatasetCompiler.load_from_pickle(config.src)
 cv = RepeatedStratifiedKFold(n_splits=config.k_folds, n_repeats=config.repeats)
 
 model = RandomForestClassifier(
-    n_estimators=config.n_estimators,
-    max_features=config.max_features,
-    class_weight=config.class_weights,
-    max_depth=config.max_depth,
-    min_samples_split=config.min_samples_split,
-    min_samples_leaf=config.min_samples_leaf,
-    max_leaf_nodes=config.max_leaf_nodes
+
 )
 
 score_func = make_scorer(matthews_corrcoef)

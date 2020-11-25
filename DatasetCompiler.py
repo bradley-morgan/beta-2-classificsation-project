@@ -182,5 +182,10 @@ if __name__ == "__main__":
     data_sets = MergeDatasets(config.merge)(data_sets)
     data_sets = ChangeNans(config.change_nans)(data_sets)
     data = data_sets.provide('merged-3sn6-4lde-5jqh', 'int64')
-    data_sets.save_as_pickle(data, dest='./data/processed', name='clean_data')
+    data_sets.save_as_pickle(data, dest='./data/processed', name='lrg_clean_data')
+
+    # sm_data = DatasetCompiler.load_from_pickle('./data/processed/clean_data.pickle')
+    # data = DatasetCompiler.load_from_pickle('./data/processed/lrg_clean_data.pickle')
+    # import numpy as np
+    # vals, counts = np.unique(data.y_hold_out, return_counts=True)
 

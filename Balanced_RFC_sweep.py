@@ -11,7 +11,7 @@ from DatasetCompiler import DatasetCompiler
 # Setup
 parameters = get.general_config(return_obj=False)
 parameters['src'] = './data/processed/clean_data.pickle'
-parameters['project_name'] = 'test_changes'
+parameters['project_name'] = 'test'
 
 wandb.init(
            config=parameters,
@@ -36,11 +36,13 @@ model = BalancedRandomForestClassifier(
     max_features=config.max_features,
     class_weight=config.class_weights,
     max_depth=config.max_depth,
+    n_jobs=-1,
 )
 
 score_func = make_scorer(matthews_corrcoef)
 scores = cross_val_score(model, X=data.x_train, y=data.y_train,
-                         scoring=score_func, cv=cv, n_jobs=-1)
+                         scoring=score_func, cv=cv, n_jobs=-1,     verbose=1
+)
 
 mean_s = mean(scores)
 std_s = std(scores)
