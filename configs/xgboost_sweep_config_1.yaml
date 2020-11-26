@@ -1,0 +1,73 @@
+program: balanced_xgboost_sweep.py
+name: XGBoost Sweep Round 1
+description: Training & Validation sets represent 98% of data, Final hold out Represents 2%
+method: bayes
+metric:
+  goal: maximize
+  name: Mean
+parameters:
+    n_estimators:
+      distribution: int_uniform
+      max: 1000
+      min: 10
+
+    max_depth:
+      distribution: int_uniform
+      max: 13
+      min: 3
+
+    learning_rate:
+      distribution: uniform
+      max: 0.1
+      min: 0.01
+
+    subsample:
+      distribution: uniform
+      max: 1.0
+      min: 0.5
+
+    colsample_bytree:
+      distribution: uniform
+      max: 1.0
+      min: 0.3
+
+    booster:
+      distribution: categorical
+      values:
+        - gbtree
+        - dart
+
+    gamma:
+      distribution: uniform
+      max: 10.0
+      min: 0.0
+
+    eta:
+      distribution: uniform
+      max: 1.0
+      min: 0.0
+
+    min_child_weight:
+      distribution: uniform
+      max: 10.0
+      min: 0.0
+
+    max_delta_step:
+      distribution: int_uniform
+      max: 10
+      min: 1
+
+    reg_alpha:
+      distribution: uniform
+      max: 10.0
+      min: 0.0
+
+    reg_lambda:
+      distribution: uniform
+      max: 10.0
+      min: 0.0
+
+    scale_pos_weight:
+      distribution: int_uniform
+      max: 10
+      min: 1

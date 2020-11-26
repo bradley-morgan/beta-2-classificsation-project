@@ -1,48 +1,44 @@
 import wandb
-from imblearn.ensemble import BalancedRandomForestClassifier
+from imblearn.ensemble import RUSBoostClassifier
+from sklearn.ensemble import RandomForestClassifier
 from numpy import mean
 from numpy import std
 from scipy.stats import sem
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
 from sklearn.metrics import matthews_corrcoef, make_scorer
-from configs import get
 from DatasetCompiler import DatasetCompiler
+from xgboost import XGBClassifier
+
 
 # Setup
-parameters = get.general_config(return_obj=False)
-parameters['src'] = './data/processed/clean_data.pickle'
-parameters['project_name'] = 'test'
+parameters = dict(
+    src='./data/processed/lrg_clean_data.pickle',
+    project_name='test',
+    notes='Testing Balanced Ada Boost',
+    k_folds=3,
+    repeats=1,
+)
 
 wandb.init(
            config=parameters,
            project=parameters['project_name'],
            notes=parameters['notes'],
-           name='Balanced_test',
+           name='Standard xgboost',
            allow_val_change=True
           )
 config = wandb.config
 
-if config.class_weights == "None":
-    wandb.config.update({"class_weights": None}, allow_val_change=True)
-    print('CONFIG UPDATE')
-
 # Load Data_set
 data = DatasetCompiler.load_from_pickle(config.src)
-
 cv = RepeatedStratifiedKFold(n_splits=config.k_folds, n_repeats=config.repeats)
 
-model = BalancedRandomForestClassifier(
-    n_estimators=config.n_estimators,
-    max_features=config.max_features,
-    class_weight=config.class_weights,
-    max_depth=config.max_depth,
-    n_jobs=-1,
-)
+# Fit and Validate models then generate confusion matrix
+model = XGBClassifier()
 
 score_func = make_scorer(matthews_corrcoef)
 scores = cross_val_score(model, X=data.x_train, y=data.y_train,
-                         scoring=score_func, cv=cv, n_jobs=-1
-)
+                         scoring=score_func, cv=cv, n_jobs=-1)
+
 
 mean_s = mean(scores)
 std_s = std(scores)
