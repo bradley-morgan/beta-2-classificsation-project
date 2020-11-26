@@ -111,7 +111,7 @@ class DatasetCompiler():
         dataFrame = self.datasets[name]["data"]
         y = dataFrame[self.y_labels].values
         x = dataFrame.drop(self.y_labels, axis=1)
-        feature_names = list(x.columns)
+        feature_names = x.columns.values
         x = x.values
 
         if dtype:
@@ -127,7 +127,8 @@ class DatasetCompiler():
                     x_train=x_train,
                     x_hold_out=x_hold_out,
                     y_train=y_train,
-                    y_hold_out=y_hold_out
+                    y_hold_out=y_hold_out,
+                    feature_names=feature_names
         )
         # return x_train, x_hold_out, y_train, y_hold_out, feature_names
 
@@ -160,6 +161,7 @@ class DatasetCompiler():
         if not os.path.exists(file_path):
             raise FileExistsError(f'File Does not exist: {file_path} try using tools.path')
 
+
         with open(file_path, 'rb') as input_put_file:
             data = pickle.load(input_put_file)
             print(f'Pickle Load Successful for: {file_path}')
@@ -182,7 +184,7 @@ if __name__ == "__main__":
     data_sets = MergeDatasets(config.merge)(data_sets)
     data_sets = ChangeNans(config.change_nans)(data_sets)
     data = data_sets.provide('merged-3sn6-4lde-5jqh', 'int64')
-    data_sets.save_as_pickle(data, dest='./data/processed', name='lrg_clean_data')
+    data_sets.save_as_pickle(data, dest='./data/processed', name='lrg_clean_data_v2')
 
     # sm_data = DatasetCompiler.load_from_pickle('./data/processed/clean_data.pickle')
     # data = DatasetCompiler.load_from_pickle('./data/processed/lrg_clean_data.pickle')
