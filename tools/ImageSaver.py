@@ -2,25 +2,29 @@ from tools.set_path import path
 from sklearn import tree
 import wandb
 import os
+import matplotlib.pyplot as plt
 import subprocess
+import matplotlib
 
 class ImageSaver:
 
-    def __init__(self):
+    def __init__(self, run):
+        matplotlib.use('Agg')
         self.save_dir = path('../tmp')
+        self.run = run
 
         if not os.path.isdir(self.save_dir):
             os.mkdir(self.save_dir)
 
         self.clean_up()
 
-    def save(self, plot, run: wandb.run, name: str, format: str):
+    def save(self, plot, name: str, format: str):
 
         save_path = os.path.join(self.save_dir, f'{name}.{format}')
         #TODO This needs Testing
         plot.savefig(save_path, format=format, dpi=300)
-
-        run.log({name: wandb.Image(save_path)})
+        self.run.log({name: wandb.Image(save_path)})
+        self.clean_up()
 
     def save_graphviz(self, model: tree.DecisionTreeClassifier,
                       run: wandb.run,
@@ -51,6 +55,7 @@ class ImageSaver:
             raise ValueError('ImageSave.save_graphviz: Graphviz dot to png command failed during subprocess run')
 
     def clean_up(self):
+        plt.clf()
         # Clear tmp folder of files no longer needed
         files = os.listdir(self.save_dir)
         for file in files:
