@@ -8,6 +8,7 @@ from sklearn.metrics import matthews_corrcoef, make_scorer
 from DatasetCompiler import DatasetCompiler
 from imblearn.under_sampling import RandomUnderSampler
 import numpy as np
+from imblearn.over_sampling import RandomOverSampler
 
 
 # Setup

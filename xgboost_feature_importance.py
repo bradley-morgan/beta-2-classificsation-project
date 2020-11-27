@@ -7,18 +7,15 @@ from scipy.stats import sem
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
 from sklearn.metrics import matthews_corrcoef, make_scorer
 from DatasetCompiler import DatasetCompiler
-from xgboost import XGBClassifier
+from xgboost import XGBClassifier, plot_importance
 import numpy as np
-from imblearn.over_sampling import RandomOverSampler
+from tools.anonymousClass import Obj
+import matplotlib.pyplot as plt
 
 
 # Setup
-parameters = dict(
+config = Obj(
     src='./data/processed/lrg_clean_data.pickle',
-    project_name='b2ar-no-filter-rfc-optimisation',
-    notes='Full Bayes Optimisation on XGBoost GPU Accelerated',
-    k_folds=5,
-    repeats=1,
     n_estimators=824,
     max_depth=10,
     learning_rate=0.0491,
@@ -34,20 +31,10 @@ parameters = dict(
     scale_pos_weight=1
 )
 
-wandb.init(
-           config=parameters,
-           project=parameters['project_name'],
-           notes=parameters['notes'],
-           allow_val_change=True,
-           name='jackpot test'
-          )
-config = wandb.config
-
 # Load Data_set
 data = DatasetCompiler.load_from_pickle(config.src)
-cv = RepeatedStratifiedKFold(n_splits=config.k_folds, n_repeats=config.repeats)
 
-vals, counts = np.unique(data.y_hold_out, return_counts=True)
+#  vals, counts = np.unique(data.y_train, return_counts=True)
 #  scale_pos_weight=int(np.round(max(counts) / min(counts), decimals=0)),
 model = XGBClassifier(
     n_estimators=config.n_estimators,
@@ -66,20 +53,7 @@ model = XGBClassifier(
     tree_method='gpu_hist'
 )
 
-over_sample = RandomOverSampler(sampling_strategy='minority')
-x_train, y_train = over_sample.fit_resample(data.x_train, data.y_train)
+model.fit(data.x_train, data.y_train)
 
-score_func = make_scorer(matthews_corrcoef)
-scores = cross_val_score(model, X=x_train, y=y_train,
-                         scoring=score_func, cv=cv, n_jobs=-1)
-
-model.prs
-
-
-mean_s = mean(scores)
-std_s = std(scores)
-ste_s = sem(scores)
-
-print('MCC: Mean=%.3f Standard Deviation=%.3f Standard Error=%.3f' % (mean_s, std_s, ste_s))
-metrics = {'Mean': mean_s, 'Standard Deviation': std_s, 'Standard Error': ste_s}
-wandb.log(metrics)
+plot_importance(model)
+plt.show()

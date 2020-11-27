@@ -11,6 +11,8 @@ from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dropout, Dens
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
+from imblearn.under_sampling import RandomUnderSampler
+from imblearn.over_sampling import RandomOverSampler
 
 # TODO Make 1D cnn
 # TODO Create cross validation loop with MCC scoring the test fold
@@ -21,7 +23,7 @@ config = Obj(
     src='./data/processed/lrg_clean_data.pickle',
     k_folds=2,
     n_repeats=1,
-    epochs=55,
+    epochs=500,
     batch_size=128
 )
 
@@ -59,6 +61,11 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
             train_x, val_x = data.x_train[train_idx], data.x_train[test_idx]
             train_y, val_y = data.y_train[train_idx], data.y_train[test_idx]
 
+            undersample = RandomOverSampler(sampling_strategy='minority')
+            x_train, y_train = undersample.fit_resample(train_x, train_y)
+            val_x, val_y = undersample.fit_resample(val_x, val_y)
+
+
             train_x = np.expand_dims(train_x, axis=2)
             train_y = np.expand_dims(train_y, axis=1)
             val_x = np.expand_dims(val_x, axis=2)
@@ -67,23 +74,24 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
 
             # Fit and Validate models
             model = Sequential()
-            # model.add(Dense(136, activation='relu'))
             model.add(Input(shape=(train_x.shape[1], 1)))
-            # model.add(Conv1D(filters=32, kernel_size=3, activation='relu'))
-            model.add(Conv1D(filters=128, kernel_size=3, activation='relu'))
+            # model.add(Dense(50, activation='relu'))
+            model.add(Conv1D(filters=32, kernel_size=3, activation='relu'))
+            model.add(Conv1D(filters=32, kernel_size=6, activation='relu'))
 
-            model.add(Dropout(0.9))
+            model.add(Dropout(0.85))
             model.add(MaxPooling1D(pool_size=2))
             model.add(Flatten())
             model.add(Dense(1000, activation='relu'))
+            model.add(Dropout(0.2))
             model.add(Dense(450, activation='relu'))
-            model.add(Dropout(0.45))
+            # model.add(Dropout(0.45))
             model.add(Dense(1, activation='sigmoid'))
             model.compile(optimizer='adam',loss='binary_crossentropy', metrics=[matthews_correlation_coefficient])
             if show_summary:
                 model.summary()
                 show_summary = False
-            history = model.fit(x=train_x, y=train_y, epochs=config.epochs, batch_size=config.batch_size,validation_split=0.1, verbose=1, class_weight={0:4, 1:1})
+            history = model.fit(x=train_x, y=train_y, epochs=config.epochs, batch_size=config.batch_size,validation_split=0.01, verbose=1, class_weight={0:1, 1:1})
             training_hist.append(history.history['matthews_correlation_coefficient'])
             val_history.append(history.history['val_matthews_correlation_coefficient'])
 
