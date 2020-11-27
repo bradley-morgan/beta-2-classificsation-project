@@ -5,7 +5,7 @@ from numpy import mean
 from numpy import std
 from scipy.stats import sem
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
-from sklearn.metrics import matthews_corrcoef, make_scorer
+from sklearn.metrics import matthews_corrcoef, make_scorer, confusion_matrix
 from DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
 import numpy as np
@@ -73,8 +73,11 @@ score_func = make_scorer(matthews_corrcoef)
 scores = cross_val_score(model, X=x_train, y=y_train,
                          scoring=score_func, cv=cv, n_jobs=-1)
 
-model.prs
+model.fit(x_train, y_train)
+y_preds = model.predict(data.x_hold_out)
 
+hold_out_conf_mat = confusion_matrix(data.y_hold_out, y_preds)
+hold_out_score = matthews_corrcoef(y_true=data.y_hold_out, y_pred=y_preds)
 
 mean_s = mean(scores)
 std_s = std(scores)
