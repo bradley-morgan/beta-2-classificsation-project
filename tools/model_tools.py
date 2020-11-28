@@ -2,11 +2,13 @@ from joblib import dump, load
 import os
 from tools.anonymousClass import Obj
 
-def load_model(file_name):
+
+def local_load_model(file_name):
     model = load(file_name)
     return model
 
-def save_model(model, file_name:str, mete_data:dict, overwrite=False):
+
+def local_save_model(model, file_name:str, mete_data:dict, overwrite=False, return_path=False):
 
     dir_path = './saved_models'
     if not os.path.isdir(dir_path):
@@ -30,4 +32,5 @@ def save_model(model, file_name:str, mete_data:dict, overwrite=False):
     dump(data, os.path.join(dir_path, file_name))
     print('Model Successfully saved')
 
-
+    if return_path:
+        return os.path.join(dir_path, file_name)
