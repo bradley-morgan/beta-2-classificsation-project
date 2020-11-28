@@ -14,7 +14,7 @@ from tools.ImageSaver import ImageSaver
 import tools.model_tools as m_tools
 from tools.anonymousClass import Obj
 from tqdm import tqdm
-
+from scipy.stats import ttest_1samp
 
 def plot_confusion_matrix(y_true, y_preds):
 
@@ -30,15 +30,6 @@ def plot_confusion_matrix(y_true, y_preds):
     return plot
 
 
-def test_model_on_hold_out(run, model, data):
-    model.fit(data.x_train, data.y_train)
-    y_preds = model.predict(data.x_hold_out)
-    hold_out_score = matthews_corrcoef(y_true=data.y_true, y_pred=y_preds)
-    run.log({'Hold Out MCC': hold_out_score})
-    plot = plot_confusion_matrix(data.y_hold_out, y_preds)
-    return plot
-
-
 def log_performance(scores, mean_s, std_s, ste_s):
     sns.set()
     plt.plot(scores, linewidth=2.0)
@@ -49,13 +40,27 @@ def log_performance(scores, mean_s, std_s, ste_s):
     plt.ylabel('Score')
     return plt.gcf()
 
-def get_stats(scores, threshold):
-    # calculate significance against the null
-
-
+def get_stats(scores, population_mean, alpha=0.05):
+    # Get descriptives
     mean_s = mean(scores)
     std_s = std(scores)
     ste_s = sem(scores)
+    # Get inferential
+    tscore, pvalue = ttest_1samp(scores, population_mean)
+    # Get one tailed pvalue
+    pvalue = pvalue/2
+    is_significant = pvalue < alpha
+    return Obj(
+        type='One Tailed',
+        mean=mean_s,
+        std=std_s,
+        ste=ste_s,
+        tscore=tscore,
+        pvalue=pvalue,
+        alpha=alpha,
+        population_mean=population_mean,
+        is_significant=is_significant
+    )
 
 
 def get_data(src):
@@ -79,7 +84,12 @@ def get_data(src):
         counts_after_sampling=counts_after_sampling
     )
 
-def make_model(model_config):
+def make_model(model_config, test):
+    if test:
+        return XGBClassifier(n_estimators=10,
+                             tree_method='gpu_hist'
+                             )
+
     return XGBClassifier(
         n_estimators=model_config.n_estimators,
         max_depth=model_config.max_depth,
@@ -103,7 +113,7 @@ parameters = dict(
     project_name='b2ar-no-filter-rfc-optimisation',
     notes='Full Bayes Optimisation on XGBoost GPU Accelerated',
     k_folds=5,
-    repeats=1,
+    n_repeats=30,
     n_estimators=979,
     max_depth=19,
     learning_rate=0.07944,
@@ -138,7 +148,7 @@ cross_val_conf_matrices = []
 hold_out_scores = []
 hold_out_conf_matrices = []
 with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}',
-          desc='n_repeats') as progress_bar:
+          desc=f'Test Cycles: K={config.k_folds} R={config.n_repeats}') as progress_bar:
     for r in range(config.n_repeats):
 
         cv = StratifiedKFold(n_splits=config.k_folds, shuffle=True)
@@ -147,22 +157,23 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
             train_x, val_x = data.resampled_x_train[train_idx], data.resampled_x_train[test_idx]
             train_y, val_y = data.resampled_y_train[train_idx], data.resampled_y_train[test_idx]
 
-            model = make_model(config)
+            cross_val_model = make_model(config, test=True)
 
             # Fit & Cross validate
-            model.fit(train_x, train_y)
-            y_preds = model.predict(val_x)
+            cross_val_model.fit(train_x, train_y)
+            y_preds = cross_val_model.predict(val_x)
 
             conf_mat = confusion_matrix(val_y, y_preds)
             score = matthews_corrcoef(y_true=val_y, y_pred=y_preds)
             cross_val_scores.append(score)
             cross_val_conf_matrices.append(conf_mat)
+            progress_bar.update(1)
 
         # Hold out Evaluation: Train model on whole data-set then do final unseen test
-        model = make_model(config)
+        hold_out_model = make_model(config, True)
 
-        model.fit(data.resampled_x_train, data.resampled_y_train)
-        hold_out_y_preds = model.predict(data.x_hold_out)
+        hold_out_model.fit(data.resampled_x_train, data.resampled_y_train)
+        hold_out_y_preds = hold_out_model.predict(data.x_hold_out)
 
         hold_out_conf_mat = confusion_matrix(data.y_hold_out, hold_out_y_preds)
         hold_out_score = matthews_corrcoef(y_true=data.y_hold_out, y_pred=hold_out_y_preds)
@@ -170,10 +181,11 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
         hold_out_conf_matrices.append(hold_out_conf_mat)
 
 
-m_tools.save_model(model, 'XGBoostClassifier', parameters)
-print('MCC: Mean=%.3f Standard Deviation=%.3f Standard Error=%.3f' % (mean_s, std_s, ste_s))
-metrics = {'Mean': mean_s, 'Standard Deviation': std_s, 'Standard Error': ste_s}
-run.log(metrics)
+cross_val_stats = get_stats(cross_val_scores, population_mean=0.6171, alpha=0.05)
+hold_out_stats = get_stats(hold_out_scores, population_mean=0.5, alpha=0.05)
+
+run.log({'Cross Validation Statistics': cross_val_stats})
+run.log({'Hold Out Test Statistics': hold_out_stats})
 run.log({'Class Balances Before RandomOverSampling': {'Class Labels': data.y_labels, 'Class Counts': data.counts_before_sampling}})
 run.log({'Class Balances After RandomOverSampling': {'Class Labels': data.y_labels, 'Class Counts': data.counts_after_sampling}})
 
@@ -184,3 +196,5 @@ image_saver.save(plot=log_performance(scores, mean_s, std_s, ste_s),
 image_saver.save(plot=test_model_on_hold_out(run, model, data),
                  name=f'Cross-Validation Performance: Repeats={config.repeats} K-folds={config.k_folds}',
                  format='png')
+
+m_tools.save_model(hold_out_model, 'XGBoostClassifier', parameters)
