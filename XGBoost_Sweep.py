@@ -3,7 +3,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import sem
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import matthews_corrcoef, make_scorer, confusion_matrix
+from sklearn.metrics import matthews_corrcoef, confusion_matrix
 from DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
 import numpy as np
@@ -74,23 +74,22 @@ def get_stats(scores, theoretical_median, alpha=0.05, alternative_hypothesis='tw
     )
 
 
+def resample(X, y, resample_percentage):
+    over_sample = RandomOverSampler(sampling_strategy=resample_percentage)
+    resampled_x_train, resampled_y_train = over_sample.fit_resample(X, y)
+
+    return resampled_x_train, resampled_y_train
+
+
 def get_data(src):
     data = DatasetCompiler.load_from_pickle(src)
-    _, counts_before_sampling = np.unique(data.y_train, return_counts=True)
-    over_sample = RandomOverSampler(sampling_strategy='minority')
-    resampled_x_train, resampled_y_train = over_sample.fit_resample(data.x_train, data.y_train)
-    vals, counts_after_sampling = np.unique(resampled_y_train, return_counts=True)
+    vals, counts_before_sampling = np.unique(data.y_train, return_counts=True)
 
     return Obj(
         x_train=data.x_train,
         y_train=data.y_train,
-        resampled_x_train=resampled_x_train,
-        resampled_y_train=resampled_y_train,
-        x_hold_out=data.x_hold_out,
-        y_hold_out=data.y_hold_out,
         y_labels=vals,
         counts_before_sampling=counts_before_sampling,
-        counts_after_sampling=counts_after_sampling
     )
 
 
@@ -119,17 +118,17 @@ def make_model(model_config, test):
 
 # Setup
 meta_data = dict(
-    src='./data/processed/lrg_clean_data.pickle',
+    src='data/processed/lrg_clean_data.pickle',
     project_name='b2ar-no-filter-rfc-optimisation',
     notes='Cross Validation XGBoost GPU Accelerated',
     test_mode=False,
-    k_folds=10,
-    n_repeats=30,
-    cross_val_theoretical_median=0.9,
-    hold_out_theoretical_median=0.8,
+    k_folds=3,
+    n_repeats=1,
+    cross_val_theoretical_median=0.8,
     alpha=0.05,
     alternative_hypothesis='greater',
     n_estimators=979,
+    resample_percentage=0.5,
     max_depth=19,
     learning_rate=0.07944,
     subsample=0.851,
@@ -149,8 +148,9 @@ run = wandb.init(
     project=meta_data['project_name'],
     notes=meta_data['notes'],
     allow_val_change=True,
-    name='Cross Validation Optimised XGBoost'
+    name='test'
 )
+# Cross Validation Optimised XGBoost Round 2
 config = wandb.config
 
 # Load Data_set & Prepare Data
@@ -159,17 +159,18 @@ data = get_data(config.src)
 # Cross validation
 cross_val_scores = []
 cross_val_conf_matrices = []
-hold_out_scores = []
-hold_out_conf_matrices = []
 with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}',
           desc=f'Test Cycles: K={config.k_folds} R={config.n_repeats}') as progress_bar:
     for r in range(config.n_repeats):
 
         cv = StratifiedKFold(n_splits=config.k_folds, shuffle=True)
-        for train_idx, test_idx in cv.split(data.resampled_x_train, data.resampled_y_train):
+        for train_idx, test_idx in cv.split(data.x_train, data.y_train):
             # extract hold out test set
-            train_x, val_x = data.resampled_x_train[train_idx], data.resampled_x_train[test_idx]
-            train_y, val_y = data.resampled_y_train[train_idx], data.resampled_y_train[test_idx]
+            train_x, val_x = data.x_train[train_idx], data.x_train[test_idx]
+            train_y, val_y = data.y_train[train_idx], data.y_train[test_idx]
+
+            # OverSample Minority class resample is a tunable learnt hyper-param
+            train_x, train_y = resample(train_x, train_y, resample_percentage=config.resample_percentage)
 
             cross_val_model = make_model(config, test=config.test_mode)
 
@@ -183,17 +184,6 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
             cross_val_conf_matrices.append(conf_mat)
             progress_bar.update(1)
 
-        # Hold out Evaluation: Train model on whole data-set then do final unseen test
-        hold_out_model = make_model(config, config.test_mode)
-
-        hold_out_model.fit(data.resampled_x_train, data.resampled_y_train)
-        hold_out_y_preds = hold_out_model.predict(data.x_hold_out)
-
-        hold_out_conf_mat = confusion_matrix(data.y_hold_out, hold_out_y_preds)
-        hold_out_score = matthews_corrcoef(y_true=data.y_hold_out, y_pred=hold_out_y_preds)
-        hold_out_scores.append(hold_out_score)
-        hold_out_conf_matrices.append(hold_out_conf_mat)
-
 
 cross_val_stats = get_stats(
     cross_val_scores,
@@ -201,36 +191,11 @@ cross_val_stats = get_stats(
     alpha=config.alpha,
     alternative_hypothesis=config.alternative_hypothesis
 )
-hold_out_stats = get_stats(
-    hold_out_scores,
-    theoretical_median=config.hold_out_theoretical_median,
-    alpha=config.alpha,
-    alternative_hypothesis=config.alternative_hypothesis
-)
+
 cross_val_median_conf_mat = get_median_confusion_matrix(cross_val_conf_matrices)
-hold_out_median_conf_mat = get_median_confusion_matrix(hold_out_conf_matrices)
 
+run.log({'Mean Performance': cross_val_stats.mean})
 run.log({'Cross Validation Statistics': cross_val_stats.to_dict()})
-run.log({'Hold Out Test Statistics': hold_out_stats.to_dict()})
 run.log({'Cross Validation Median Confusion Matrix': cross_val_median_conf_mat})
-run.log({'Hold Out Median Confusion Matrix': hold_out_median_conf_mat})
 run.log({'Class Balances Before RandomOverSampling': {'Class Labels': data.y_labels, 'Class Counts': data.counts_before_sampling}})
-run.log({'Class Balances After RandomOverSampling': {'Class Labels': data.y_labels, 'Class Counts': data.counts_after_sampling}})
 
-image_saver = ImageSaver(run)
-image_saver.save(plot=plot_performance(cross_val_scores, cross_val_stats),
-                 name='Cross Validation Performance', format='png')
-image_saver.save(plot=plot_performance(hold_out_scores, hold_out_stats),
-                 name='Hold Out Test Performance', format='png')
-image_saver.save(plot=plot_confusion_matrix(cross_val_median_conf_mat),
-                 name='Cross Validation: Median confusion_matrix', format='png')
-image_saver.save(plot=plot_confusion_matrix(hold_out_median_conf_mat),
-                 name='Hold Out Test: Median confusion_matrix', format='png')
-
-meta_data_cloud = copy.deepcopy(meta_data)
-meta_data['last run stats'] = dict(cross_val=cross_val_stats.to_dict(), hold_out=hold_out_stats.to_dict())
-meta_data['last run scores'] = dict(cross_val=cross_val_scores, hold_out=hold_out_scores)
-model_file_path = m_tools.local_save_model(hold_out_model, 'XGBoostClassifier', meta_data, return_path=True)
-model_artifact = wandb.Artifact(name='XGBoostClassifier', type='models', metadata=meta_data_cloud)
-model_artifact.add_file(model_file_path)
-run.log_artifact(model_artifact)

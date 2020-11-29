@@ -1,4 +1,4 @@
-program: balanced_xgboost_sweep.py
+program: XGBoost_Cross_Validation.py
 name: XGBoost Sweep Round 1
 description: Training & Validation sets represent 98% of data, Final hold out Represents 2%
 method: bayes

@@ -1,0 +1,63 @@
+description: Training & Validation sets represent 98% of data, Final hold out Represents 2%. With RandomOverSampling of the Minority Class. Resampling Occurs for each K Fold and the Resampling Percenatage is a Hyper-param that Bayes Optimisation Tunes as there is a trade of between minority signal and overfitting.
+method: bayes
+metric:
+  goal: maximize
+  name: Mean Performance
+name: XGBoost Sweep Round TEST
+parameters:
+  resample_percentage:
+    distribution: uniform
+    max: 1
+    min: 0.3
+  booster:
+    values:
+    - gbtree
+  colsample_bytree:
+    distribution: uniform
+    max: 1
+    min: 0.3
+  eta:
+    distribution: uniform
+    max: 1
+    min: 0
+  gamma:
+    distribution: uniform
+    max: 1
+    min: 0
+  learning_rate:
+    distribution: uniform
+    max: 0.1
+    min: 0.05
+  max_delta_step:
+    distribution: int_uniform
+    max: 10
+    min: 0
+  max_depth:
+    distribution: int_uniform
+    max: 30
+    min: 3
+  min_child_weight:
+    distribution: uniform
+    max: 5
+    min: 0
+  n_estimators:
+    distribution: int_uniform
+    max: 1000
+    min: 10
+  reg_alpha:
+    distribution: uniform
+    max: 1
+    min: 0
+  reg_lambda:
+    distribution: uniform
+    max: 10
+    min: 0
+  scale_pos_weight:
+    distribution: int_uniform
+    max: 4
+    min: 1
+  subsample:
+    distribution: uniform
+    max: 1
+    min: 0.3
+program: XGBoost_Sweep.py

@@ -11,7 +11,6 @@ from tensorflow.keras.layers import Conv1D, MaxPooling1D, Flatten, Dropout, Dens
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
-from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import RandomOverSampler
 
 # TODO Make 1D cnn
@@ -20,7 +19,7 @@ from imblearn.over_sampling import RandomOverSampler
 # TODO Try Creating an Embedding One hot to vec approuch folllowed by Random Forest or PCA
 
 config = Obj(
-    src='./data/processed/lrg_clean_data.pickle',
+    src='../data/processed/lrg_clean_data.pickle',
     k_folds=2,
     n_repeats=1,
     epochs=500,

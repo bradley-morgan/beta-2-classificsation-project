@@ -1,10 +1,6 @@
 from pca.pca import pca
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import wandb
-from imblearn.ensemble import RUSBoostClassifier
-from sklearn.ensemble import RandomForestClassifier
 from numpy import mean
 from numpy import std
 from scipy.stats import sem
@@ -13,7 +9,7 @@ from sklearn.metrics import matthews_corrcoef, make_scorer
 from DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
 
-data = DatasetCompiler.load_from_pickle('./data/processed/lrg_clean_data_v2.pickle')
+data = DatasetCompiler.load_from_pickle('../data/processed/lrg_clean_data_v2.pickle')
 
 variance_threshold = 0.40
 model = pca(n_components=variance_threshold,  )
@@ -34,7 +30,7 @@ x_train_pca = pc_components.to_numpy()
 
 # Setup
 parameters = dict(
-    src='./data/processed/lrg_clean_data.pickle',
+    src='../data/processed/lrg_clean_data.pickle',
     project_name='b2ar-no-filter-rfc-optimisation',
     notes='Full Bayes Optimisation on XGBoost GPU Accelerated',
     k_folds=5,
