@@ -6,6 +6,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import matthews_corrcoef, confusion_matrix
 from DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
+from xgboost.core import XGBoostError
 import numpy as np
 from imblearn.over_sampling import RandomOverSampler
 from tools.ImageSaver import ImageSaver
@@ -75,10 +76,18 @@ def get_stats(scores, theoretical_median, alpha=0.05, alternative_hypothesis='tw
 
 
 def resample(X, y, resample_percentage):
-    over_sample = RandomOverSampler(sampling_strategy=resample_percentage)
-    resampled_x_train, resampled_y_train = over_sample.fit_resample(X, y)
 
-    return resampled_x_train, resampled_y_train
+    Error = False
+    resampled_x_train=None
+    resampled_y_train=None
+    try:
+        over_sample = RandomOverSampler(sampling_strategy=resample_percentage)
+        resampled_x_train, resampled_y_train = over_sample.fit_resample(X, y)
+
+    except ValueError:
+        Error = True
+
+    return resampled_x_train, resampled_y_train, Error
 
 
 def get_data(src):
@@ -170,13 +179,22 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
             train_y, val_y = data.y_train[train_idx], data.y_train[test_idx]
 
             # OverSample Minority class resample is a tunable learnt hyper-param
-            train_x, train_y = resample(train_x, train_y, resample_percentage=config.resample_percentage)
+            train_x, train_y, resample_error = resample(train_x, train_y, resample_percentage=config.resample_percentage)
+
+            if resample_error:
+                # If we get a resample Eror set performance to ) So Bayes Knows its bad
+                cross_val_scores.append(0.0)
+                continue
 
             cross_val_model = make_model(config, test=config.test_mode)
 
             # Fit & Cross validate
-            cross_val_model.fit(train_x, train_y)
-            y_preds = cross_val_model.predict(val_x)
+            try:
+                cross_val_model.fit(train_x, train_y)
+                y_preds = cross_val_model.predict(val_x)
+            except XGBoostError:
+                cross_val_scores.append(0.0)
+                continue
 
             conf_mat = confusion_matrix(val_y, y_preds)
             score = matthews_corrcoef(y_true=val_y, y_pred=y_preds)
