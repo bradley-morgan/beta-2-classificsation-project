@@ -157,7 +157,6 @@ run = wandb.init(
     project=meta_data['project_name'],
     notes=meta_data['notes'],
     allow_val_change=True,
-    name='test'
 )
 # Cross Validation Optimised XGBoost Round 2
 config = wandb.config

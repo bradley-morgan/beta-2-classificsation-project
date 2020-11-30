@@ -73,28 +73,6 @@ def get_stats(scores, theoretical_median, alpha=0.05, alternative_hypothesis='tw
         run_time_errors='true' if np.isnan(statistic) or np.isnan(pvalue) else 'false'
     )
 
-
-def get_data(src):
-    data = DatasetCompiler.load_from_pickle(src)
-    _, counts_before_sampling = np.unique(data.y_train, return_counts=True)
-    over_sample = RandomOverSampler(sampling_strategy='minority', )
-    resampled_x_train, resampled_y_train = over_sample.fit_resample(data.x_train, data.y_train)
-    resampled_x_train_hold_out, resampled_y_train_hold_out = over_sample.fit_resample(data.x_hold_out, data.y_hold_out)
-    vals, counts_after_sampling = np.unique(resampled_y_train, return_counts=True)
-
-    return Obj(
-        x_train=data.x_train,
-        y_train=data.y_train,
-        resampled_x_train=resampled_x_train,
-        resampled_y_train=resampled_y_train,
-        x_hold_out=resampled_x_train_hold_out,
-        y_hold_out=resampled_y_train_hold_out,
-        y_labels=vals,
-        counts_before_sampling=counts_before_sampling,
-        counts_after_sampling=counts_after_sampling
-    )
-
-
 def make_model(model_config, test):
     if test:
         return XGBClassifier(n_estimators=10,
@@ -117,6 +95,36 @@ def make_model(model_config, test):
         scale_pos_weight=model_config.scale_pos_weight,
         tree_method='gpu_hist'
     )
+
+
+def resample(X, y, resample_percentage):
+
+    Error = False
+    resampled_x_train=None
+    resampled_y_train=None
+    try:
+        over_sample = RandomOverSampler(sampling_strategy=resample_percentage)
+        resampled_x_train, resampled_y_train = over_sample.fit_resample(X, y)
+
+    except ValueError:
+        Error = True
+
+    return resampled_x_train, resampled_y_train, Error
+
+
+def get_data(src):
+    data = DatasetCompiler.load_from_pickle(src)
+    vals, counts_before_sampling = np.unique(data.y_train, return_counts=True)
+
+    return Obj(
+        x_train=data.x_train,
+        y_train=data.y_train,
+        y_labels=vals,
+        counts_before_sampling=counts_before_sampling,
+    )
+
+
+
 
 # Setup
 meta_data = dict(
@@ -167,10 +175,10 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
     for r in range(config.n_repeats):
 
         cv = StratifiedKFold(n_splits=config.k_folds, shuffle=True)
-        for train_idx, test_idx in cv.split(data.resampled_x_train, data.resampled_y_train):
+        for train_idx, test_idx in cv.split(data.x_train, data.y_trainan):
             # extract hold out test set
-            train_x, val_x = data.resampled_x_train[train_idx], data.resampled_x_train[test_idx]
-            train_y, val_y = data.resampled_y_train[train_idx], data.resampled_y_train[test_idx]
+            train_x, val_x = data.x_train[train_idx], data.x_train[test_idx]
+            train_y, val_y = data.y_train[train_idx], data.y_train[test_idx]
 
             cross_val_model = make_model(config, test=config.test_mode)
 
@@ -187,7 +195,7 @@ with tqdm(total=config.n_repeats*config.k_folds, bar_format='{l_bar}{bar:50}{r_b
         # Hold out Evaluation: Train model on whole data-set then do final unseen test
         hold_out_model = make_model(config, config.test_mode)
 
-        hold_out_model.fit(data.resampled_x_train, data.resampled_y_train)
+        hold_out_model.fit(data.x_train, data.y_train)
         hold_out_y_preds = hold_out_model.predict(data.x_hold_out)
 
         hold_out_conf_mat = confusion_matrix(data.y_hold_out, hold_out_y_preds)

@@ -29,15 +29,6 @@ def general_config(return_obj=True):
             change_nans=dict(
                 value=0
             ),
-            k_folds=3,
-            repeats=1,
-            n_estimators=8000,
-            max_features='auto',
-            class_weights='balanced',
-            max_depth=None,
-            min_samples_split=2,
-            min_samples_leaf=2,
-            max_leaf_nodes=None
         )
 
     else:
@@ -65,15 +56,6 @@ def general_config(return_obj=True):
             change_nans=dict(
                 value=0
             ),
-            k_folds=3,
-            repeats=1,
-            n_estimators=1000,
-            max_features='auto',
-            max_depth=None,
-            min_samples_split=2,
-            min_samples_leaf=2,
-            class_weights='balanced',
-            max_leaf_nodes=None
         )
 
     return parameters
