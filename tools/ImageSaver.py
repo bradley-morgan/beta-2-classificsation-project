@@ -27,7 +27,6 @@ class ImageSaver:
         self.clean_up()
 
     def save_graphviz(self, model: tree.DecisionTreeClassifier,
-                      run: wandb.run,
                       feature_names: list,
                       class_names: list,
                       graph_name: str,):
@@ -49,7 +48,7 @@ class ImageSaver:
         png_out_file = os.path.join(self.save_dir, f'{name}.{format}')
         out = subprocess.run(['dot', '-Tpng', dot_out_file, '-o', png_out_file])
 
-        run.log({graph_name: wandb.Image(png_out_file)})
+        self.run.log({graph_name: wandb.Image(png_out_file)})
 
         if out.returncode != 0:
             raise ValueError('ImageSave.save_graphviz: Graphviz dot to png command failed during subprocess run')

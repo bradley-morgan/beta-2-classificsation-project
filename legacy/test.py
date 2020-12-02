@@ -1,4 +1,4 @@
-from DatasetCompiler import DatasetCompiler
+from tools.DatasetCompiler import DatasetCompiler
 import numpy as np
 
 data = DatasetCompiler.load_from_pickle('./data/processed/clean_data.pickle')

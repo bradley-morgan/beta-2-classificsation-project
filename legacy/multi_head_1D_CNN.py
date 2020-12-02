@@ -2,7 +2,7 @@ from numpy import mean
 from numpy import std
 from scipy.stats import sem
 from sklearn.model_selection import StratifiedKFold
-from DatasetCompiler import DatasetCompiler
+from tools.DatasetCompiler import DatasetCompiler
 import numpy as np
 from tools.anonymousClass import Obj
 from tensorflow.keras import backend as K
@@ -18,7 +18,7 @@ import seaborn as sns
 # TODO Try Creating an Embedding One hot to vec approuch folllowed by Random Forest or PCA
 
 config = Obj(
-    src='../data/processed/lrg_clean_data.pickle',
+    src='../data/processed/non-filtered/lrg_clean_data.pickle',
     k_folds=2,
     n_repeats=1,
     epochs=55,

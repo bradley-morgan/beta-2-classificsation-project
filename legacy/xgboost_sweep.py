@@ -4,13 +4,13 @@ from numpy import std
 from scipy.stats import sem
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
 from sklearn.metrics import matthews_corrcoef, make_scorer
-from DatasetCompiler import DatasetCompiler
+from tools.DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
 
 
 # Setup
 parameters = dict(
-    src='../data/processed/lrg_clean_data.pickle',
+    src='../data/processed/non-filtered/lrg_clean_data.pickle',
     project_name='test',
     notes='Testing Balanced Ada Boost',
     k_folds=3,

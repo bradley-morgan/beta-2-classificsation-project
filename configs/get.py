@@ -63,7 +63,7 @@ def general_config(return_obj=True):
 
 def random_forest_sweep_config():
     parameters = dict(
-        program='RFC_sweep.py',
+        program='unfiltered_RFC_sweep.py',
         project='test-optim',
         method='bayes',
         metric=dict(
