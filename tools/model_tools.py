@@ -7,6 +7,7 @@ import numpy as np
 from tools.anonymousClass import Obj
 from scipy.stats import wilcoxon
 from statsmodels.stats.proportion import proportion_confint
+from sklearn.metrics import matthews_corrcoef, accuracy_score, confusion_matrix
 
 
 def local_load_model(file_name):
@@ -69,6 +70,17 @@ def plot_performance(scores, stats: Obj):
     plt.ylabel('Score')
     return plt.gcf()
 
+def get_model_performance(y_true, y_preds):
+    conf_mat = confusion_matrix(y_true, y_preds)
+    mcc_score = matthews_corrcoef(y_true=y_true, y_pred=y_preds)
+    acc_score = accuracy_score(y_true=y_true, y_pred=y_preds)
+
+    return Obj(
+        conf_mat=conf_mat,
+        mcc_score=mcc_score,
+        acc_score=acc_score
+    )
+
 
 def get_wilcoxon_stats(scores_A, scores_B, alpha=0.05, alternative_hypothesis='two-sided'):
     # Get descriptives
@@ -129,4 +141,16 @@ def get_resampled_confidence_interval(scores:list, score_range, alpha:int):
         radius=radius
     )
 
-def get_elbow_precision(n_repeats, model, ):
+
+def get_elbow_precision(sample_sizes, validator, alpha, confidence_interval='resample', score_range=None ):
+    """
+
+    :param sample_sizes: Array of sample Sizes to test over
+    :param validator: model_performance_estimation class Boostrap or CrossValidation
+    :param alpha: Confidence level E.g 5% or 0.05 probability
+    :param confidence_interval: Method used to calculate the confidence interval. For Non-Normal Distributions
+     'get_resampled_confidence_interval'. For Normally distributed data 'get_binomial_confidence_interval'
+    :param score_range: if confidence_interval = get_resampled_confidence_interval the define the minimum and maximum
+    ranges of the model performance metric, E.g accuracy is defined in a range from 0-1.
+    """
+    pass
