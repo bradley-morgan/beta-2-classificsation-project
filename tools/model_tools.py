@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import sem
 import numpy as np
 from tools.anonymousClass import Obj
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon, norm, normaltest
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.metrics import matthews_corrcoef, accuracy_score, confusion_matrix
 
@@ -70,6 +70,7 @@ def plot_performance(scores, stats: Obj):
     plt.ylabel('Score')
     return plt.gcf()
 
+
 def get_model_performance(y_true, y_preds):
     conf_mat = confusion_matrix(y_true, y_preds)
     mcc_score = matthews_corrcoef(y_true=y_true, y_pred=y_preds)
@@ -82,21 +83,31 @@ def get_model_performance(y_true, y_preds):
     )
 
 
+def is_normal_distribution(score):
+    _, p = normaltest(score)
+    return p < 1e-3
+
+
+def get_z_score(confidence_level):
+    area_under_curve = (1+confidence_level)/2
+    z_score = np.round(norm.ppf(area_under_curve), decimals=2)
+    return z_score
+
+
+def get_descriptive_stats(scores):
+    return Obj(
+            mean=np.mean(scores),
+            median=np.median(scores),
+            std=np.std(scores),
+            ste=sem(scores),
+        )
+
+
 def get_wilcoxon_stats(scores_A, scores_B, alpha=0.05, alternative_hypothesis='two-sided'):
     # Get descriptives
     descriptives = Obj(
-        A=Obj(
-            mean_s=np.mean(scores_A),
-            median_s=np.median(scores_A),
-            std_s=np.std(scores_A),
-            ste_s=sem(scores_A),
-        ),
-        B=Obj(
-            mean_s=np.mean(scores_B),
-            median_s=np.median(scores_B),
-            std_s=np.std(scores_B),
-            ste_s=sem(scores_B),
-        )
+        A=get_descriptive_stats(scores_A),
+        B=get_descriptive_stats(scores_B)
     )
 
     # Get inferential
@@ -114,6 +125,39 @@ def get_wilcoxon_stats(scores_A, scores_B, alpha=0.05, alternative_hypothesis='t
         theoretical_median=scores_B,
         is_significant='true' if is_significant else 'false',
         run_time_errors='true' if np.isnan(statistic) or np.isnan(pvalue) else 'false'
+    )
+
+
+def get_normal_confidence_interval(scores: list, confidence_level, score_range:tuple):
+    # This method is based on the assumption that samples are normally distributed check this and report a warning
+    # if samples are non-normal
+    distribution = None
+    if not is_normal_distribution(scores):
+        distribution = 'DataNotNormal'
+        output = get_resampled_confidence_interval(
+            scores,
+            score_range,
+            100-confidence_level
+        )
+        output(distribution=distribution)
+        return output
+
+    distribution = 'DataNormal'
+
+    confidence_level = confidence_level / 100 if confidence_level > 1.0 else confidence_level
+    desc_stats = get_descriptive_stats(scores)
+    z_score = get_z_score(confidence_level)
+    # Normal Distribution in symmetric so we only have to calculate interval once
+    confidence_interval = desc_stats.mean + z_score * desc_stats.std / np.sqrt(len(scores))
+    upper_bound = desc_stats.mean + confidence_interval
+    lower_bound = desc_stats.mean - confidence_interval
+    radius = upper_bound - lower_bound
+
+    return Obj(
+        upper_bound=upper_bound,
+        lower_bound=lower_bound,
+        radius=radius,
+        distribution=distribution
     )
 
 
@@ -140,6 +184,24 @@ def get_resampled_confidence_interval(scores:list, score_range, alpha:int):
         upper_bound=upper_bound,
         radius=radius
     )
+
+
+def get_n_repeats_estimation(confidence_level, population_standard_deviation, margin_of_error):
+    """
+    Estimates the number of samples, in this context, number of repeats needed in order to be sure relative to
+    a given confidence level that the estimate will be within the specified margin of error range.
+    :param confidence_level: E.g 95% Confidence level which is the same an alpha of 0.05 when doing p value confidence
+    :param population_standard_deviation:
+     Can be an estimate of the standard deviation of the population. Can be obtained by running many bootstrap experiments
+     and calculating the standard error. (Standard error is an estimation of the population standard deviation)
+    :param margin_of_error: Specified level of precision you can live with. E.g be accurate within 0.1 at 95%
+    confidence level
+    :return: Estimated Number of repeats
+    """
+    z_score = get_z_score(confidence_level)
+    estimated_n_repeats = z_score**2 * (population_standard_deviation**2 / margin_of_error**2)
+    return estimated_n_repeats
+
 
 
 def get_elbow_precision(sample_sizes, validator, alpha, confidence_interval='resample', score_range=None ):
