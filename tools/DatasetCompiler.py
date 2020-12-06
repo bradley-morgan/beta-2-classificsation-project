@@ -109,10 +109,10 @@ class DatasetCompiler():
         # TODO Out of scope: add the ability to select a range of columns to be x data
         # Flexibility
         dataFrame = self.datasets[name]["data"]
-        y = dataFrame[self.y_labels].values
+        y = dataFrame[self.y_labels].to_numpy()
         x = dataFrame.drop(self.y_labels, axis=1)
-        feature_names = x.columns.values
-        x = x.values
+        feature_names = x.columns.to_numpy()
+        x = x.to_numpy()
 
         if dtype:
             x = x.astype(dtype)
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     filter_name = 'merged-B2in-Z-R'
     filter_groups = [('B2in-ant', 'B2in-ag'), ('R-ant', 'R-ag'), ('Z-ant', 'Z-ag')]
-    filter_group_names = ['3sn6', '4lde', '5jqh']
+    filter_group_names = ['b2in', 'R', 'Z']
     filter_remove_feature = 'Ligand_Pose'
     filtered_clean_feature = 'target'
 
@@ -186,7 +186,7 @@ if __name__ == "__main__":
 
 
     config = Obj(
-        project_name='b2ar-no-filter-rfc-optimisation',
+        project_name='b2ar-filter-rfc-optimisation',
         src='data/filtered',
         y_labels='target',
         test_size=0.02,
@@ -219,12 +219,12 @@ if __name__ == "__main__":
     data_sets.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
     data_sets.remove_feature(feature_name=filter_remove_feature)
     data_sets = CleanFeatureNames(config.clean_features)(data_sets)
-    data_sets = RenameFeatures(config.rename_features)(data_sets)
+    #data_sets = RenameFeatures(config.rename_features)(data_sets)
     data_sets = RemoveFeatures(config.remove_features)(data_sets)
     data_sets = MergeDatasets(config.merge)(data_sets)
     data_sets = ChangeNans(config.change_nans)(data_sets)
     data = data_sets.provide(filter_name, 'int64')
-    data_sets.save_as_pickle(data, dest='../data/processed/filtered', name='filter_lrg_clean_data_v2')
+    data_sets.save_as_pickle(data, dest='../data/processed/filtered', name='dataset1.pickle')
 
     # sm_data = DatasetCompiler.load_from_pickle('./data/processed/clean_data.pickle')
     # data = DatasetCompiler.load_from_pickle('./data/processed/lrg_clean_data.pickle')

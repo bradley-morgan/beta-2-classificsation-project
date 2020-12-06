@@ -125,7 +125,7 @@ def make_model(model_config, test):
 
 # Setup
 meta_data = dict(
-    src='data/processed/non-filtered/lrg_clean_data.pickle',
+    src='../data/processed/non-filtered/lrg_clean_data.pickle',
     project_name='b2ar-no-filter-rfc-optimisation',
     notes='Cross Validation XGBoost GPU Accelerated',
     test_mode=False,

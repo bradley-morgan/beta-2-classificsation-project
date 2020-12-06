@@ -54,7 +54,7 @@ def resample(X, y, resample_percentage):
 
 # Setup
 meta_data = dict(
-    src='data/processed/non-filtered/lrg_clean_data_v2.pickle',
+    src='../data/processed/non-filtered/lrg_clean_data_v2.pickle',
     project_name='b2ar-no-filter-rfc-optimisation',
     notes='Cross Validation XGBoost GPU Accelerated',
     test_mode=True,

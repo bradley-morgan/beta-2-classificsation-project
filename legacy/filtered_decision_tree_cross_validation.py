@@ -17,7 +17,7 @@ def make_model(model_config, test):
     return DecisionTreeClassifier()
 
 meta_data = dict(
-    src='data/processed/non-filtered/lrg_clean_data_v2.pickle',
+    src='../data/processed/non-filtered/lrg_clean_data_v2.pickle',
     project_name='b2ar-filtered',
     notes='Cross Validation Decision Tree',
     test_mode=True,

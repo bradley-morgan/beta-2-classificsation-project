@@ -36,10 +36,13 @@ def local_save_model(model, file_name: str, mete_data: dict, overwrite=False, re
 
     data = Obj(model=model, mete_data=mete_data)
     dump(data, os.path.join(dir_path, file_name))
-    print('Model Successfully saved')
+    print(f'Local Save {file_name}: Model Successfully saved')
 
     if return_path:
-        return os.path.join(dir_path, file_name)
+        return Obj(
+            path=os.path.join(dir_path, file_name),
+            file_name=file_name,
+        )
 
 
 def get_median_confusion_matrix(conf_mat: list):
@@ -84,6 +87,9 @@ def get_model_performance(y_true, y_preds):
 
 
 def is_normal_distribution(score):
+    if len(score) < 8:
+        return None
+
     _, p = normaltest(score)
     return p < 1e-3
 
@@ -128,36 +134,34 @@ def get_wilcoxon_stats(scores_A, scores_B, alpha=0.05, alternative_hypothesis='t
     )
 
 
-def get_normal_confidence_interval(scores: list, confidence_level, score_range:tuple):
+def get_normal_confidence_interval(scores: list, confidence_level, score_range:tuple, force_normal=False):
     # This method is based on the assumption that samples are normally distributed check this and report a warning
     # if samples are non-normal
-    distribution = None
-    if not is_normal_distribution(scores):
-        distribution = 'DataNotNormal'
+    if not force_normal and not is_normal_distribution(scores):
         output = get_resampled_confidence_interval(
             scores,
             score_range,
             100-confidence_level
         )
-        output(distribution=distribution)
+        output(distribution='DataNotNormal', method='bootstrap confidence')
         return output
-
-    distribution = 'DataNormal'
 
     confidence_level = confidence_level / 100 if confidence_level > 1.0 else confidence_level
     desc_stats = get_descriptive_stats(scores)
     z_score = get_z_score(confidence_level)
     # Normal Distribution in symmetric so we only have to calculate interval once
-    confidence_interval = desc_stats.mean + z_score * desc_stats.std / np.sqrt(len(scores))
+    confidence_interval = z_score * desc_stats.std / np.sqrt(len(scores))
     upper_bound = desc_stats.mean + confidence_interval
     lower_bound = desc_stats.mean - confidence_interval
     radius = upper_bound - lower_bound
 
     return Obj(
+        interval=confidence_interval,
         upper_bound=upper_bound,
         lower_bound=lower_bound,
         radius=radius,
-        distribution=distribution
+        distribution='DataNormal',
+        method='Gaussian  Confidence'
     )
 
 
@@ -202,17 +206,3 @@ def get_n_repeats_estimation(confidence_level, population_standard_deviation, ma
     estimated_n_repeats = z_score**2 * (population_standard_deviation**2 / margin_of_error**2)
     return estimated_n_repeats
 
-
-
-def get_elbow_precision(sample_sizes, validator, alpha, confidence_interval='resample', score_range=None ):
-    """
-
-    :param sample_sizes: Array of sample Sizes to test over
-    :param validator: model_performance_estimation class Boostrap or CrossValidation
-    :param alpha: Confidence level E.g 5% or 0.05 probability
-    :param confidence_interval: Method used to calculate the confidence interval. For Non-Normal Distributions
-     'get_resampled_confidence_interval'. For Normally distributed data 'get_binomial_confidence_interval'
-    :param score_range: if confidence_interval = get_resampled_confidence_interval the define the minimum and maximum
-    ranges of the model performance metric, E.g accuracy is defined in a range from 0-1.
-    """
-    pass
