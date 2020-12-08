@@ -70,7 +70,7 @@ def run_cross_validation():
     data = DatasetCompiler.load_from_pickle(config.src)
 
     # ================================== Run Cross Validation =======================================
-    results = CrossValidation(config.k_folds, config.n_repeats, data, make_model(config), config).run()
+    results = CrossValidation(config.k_folds, config.n_repeats, data, make_model(config.model), config).run()
     desc_stats = m_tools.get_descriptive_stats(results.cross_val_mcc_scores)
 
     # =================================== Log Data ==============================================

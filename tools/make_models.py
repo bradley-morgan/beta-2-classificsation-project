@@ -3,29 +3,16 @@ from xgboost import XGBClassifier
 import tools.model_tools as m_tools
 import tools.cloud_tools as c_tools
 
-def make_model(m_config):
+def make_model(model_type):
 
-    if m_config.load_model_from == 'cloud':
-        model = c_tools.cloud_load(m_config.model_file_name, m_config.global_load_run_path)
-        return model
+    if model_type == 'decision_tree' or model_type == 'd_tree' or model_type == 'DecisionTree' or model_type == 'FIMP-dt':
+        return decision_tree_contrustor
 
-    elif m_config.load_model_from == 'local':
-        model = m_tools.local_load_model(m_config.model_file_name)
-        return model
-
-    elif m_config.load_model_from == 'train':
-        return load_training_model(m_config)
-
-    else:
-        raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
-
-
-def load_training_model(m_config):
-    if m_config.model_type == 'decision_tree' or m_config.model_type == 'd_tree' or m_config.model_type == 'DecisionTree' or m_config.model_type == 'FIMP-dt':
-        return make_decision_tree
+    elif model_type == 'xgboost' or model_type == 'xgb' or model_type == 'XGBoost' or model_type == 'FIMP-xg':
+        return xgboost_constructor
     else:
         raise ValueError(
-            f'{m_config.model_type} does not exist as possible model to create. Please implement in make_models')
+            f'{model_type} does not exist as possible model to create. Please implement in make_models')
 
 
 def make_decision_tree(m_config):
@@ -53,8 +40,35 @@ def make_xgboost(m_config):
         return XGBClassifier()
 
 
+def decision_tree_contrustor(m_config):
+    if m_config.load_model_from == 'cloud':
+        model = c_tools.cloud_load(m_config.model_file_name, m_config.global_load_run_path)
+        return model
+
+    elif m_config.load_model_from == 'local':
+        model = m_tools.local_load_model(m_config.model_file_name)
+        return model.model
+
+    elif m_config.load_model_from == 'train':
+        return make_decision_tree
+
+    else:
+        raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
 
 
+def xgboost_constructor(m_config):
+    if m_config.load_model_from == 'cloud':
+        model = c_tools.cloud_load(m_config.model_file_name, m_config.global_load_run_path)
+        return model
 
+    elif m_config.load_model_from == 'local':
+        model = m_tools.local_load_model(m_config.model_file_name)
+        return model.model
+
+    elif m_config.load_model_from == 'train':
+        return make_xgboost
+
+    else:
+        raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
 
 
