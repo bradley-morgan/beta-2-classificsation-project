@@ -23,38 +23,38 @@ sweep_config = dict(
         goal='maximize',
         name='mean_mcc'
     ),
-    name='Filtered D Tree Round 1',
+    name=meta_data.sweep_name,
     description='Decision Tree Sweep Test',
     parameters=dict(
-        criterion=dict(
-            values=['gini', 'entropy']
-        ),
-        splitter=dict(
-            values=['best', 'random']
-        ),
+        # criterion=dict(
+        #     values=['gini', 'entropy']
+        # ),
+        # splitter=dict(
+        #     values=['best', 'random']
+        # ),
         max_depth=dict(
             distribution='int_uniform',
-            max=200,
+            max=5,
             min=3
         ),
-        max_features=dict(
-            distribution='int_uniform',
-            max=161,
-            min=1
-        ),
-        min_samples_split=dict(
-            distribution='int_uniform',
-            max=1000,
-            min=1
-        ),
-        min_samples_leaf=dict(
-            distribution='int_uniform',
-            max=1000,
-            min=1
-        ),
-        class_weight=dict(
-            values=['balanced']
-        ),
+        # max_features=dict(
+        #     distribution='int_uniform',
+        #     max=161,
+        #     min=1
+        # ),
+        # min_samples_split=dict(
+        #     distribution='int_uniform',
+        #     max=1000,
+        #     min=1
+        # ),
+        # min_samples_leaf=dict(
+        #     distribution='int_uniform',
+        #     max=1000,
+        #     min=1
+        # ),
+        # class_weight=dict(
+        #     values=['balanced', None]
+        # ),
     )
 )
 
@@ -70,7 +70,7 @@ def run_cross_validation():
     data = DatasetCompiler.load_from_pickle(config.src)
 
     # ================================== Run Cross Validation =======================================
-    results = CrossValidation(config.k_folds, config.n_repeats, data, make_model(config.model), config).run()
+    results = CrossValidation(config.k_folds, config.n_repeats, data, make_model(config), config).run()
     desc_stats = m_tools.get_descriptive_stats(results.cross_val_mcc_scores)
 
     # =================================== Log Data ==============================================

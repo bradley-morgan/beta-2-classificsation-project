@@ -150,7 +150,6 @@ class ModelEstimations:
     def __init__(self, config: Obj, make_model_func, cloud_log=True):
         self.meta_data = config
         self.src = config.src
-        self.id = config.id
         self.project_name = config.project_name
         self.run_name = config.run_name
         self.notes = config.notes
@@ -187,7 +186,6 @@ class ModelEstimations:
                 notes=self.notes,
                 allow_val_change=True,
                 name=self.run_name,
-                id=self.id
             )
             self.config = wandb.config
             self.image_saver = ImageSaver(self.run)

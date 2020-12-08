@@ -1,28 +1,56 @@
 from tools.anonymousClass import Obj
 from tools.make_models import make_model
 
-MODEL_ESTIMATION_RUN_ID = '12'
-CROSS_VALIDATION_RUN_ID = '5'
-FEATURE_IMPORTANCE_RUN_ID = '2'
+# MODEL_ESTIMATION_RUN_ID = '12'
+# CROSS_VALIDATION_RUN_ID = '5'
+# FEATURE_IMPORTANCE_RUN_ID = '2'
 
-global_src = 'data/processed/filtered/filter-resample-test.pickle'
-global_project_name = 'test'
+global_src = 'data/processed/non-filtered/dataset1-10percent-hold-out.pickle'
+global_project_name = 'B2AR-Unfiltered'
 global_cloud_log = True
 global_test_mode = False
 global_artifact_name = 'DecisionTree'
 global_model = 'decision_tree'
-global_load_model_from = 'train'
-global_load_run_path='bradamorg/filter-test/6'
-global_model_file_name = 'v4_CV-DecisionTree.joblib'
+global_load_model_from = 'local'
+global_load_run_path='bradamorg/B2AR-Filtered/27p42aap'
+global_model_file_name = './saved_models/XGBoostClassifier_Cross_Val.joblib'
 
 # Model Parameters Need to match global model
+# DEFAULT
+# criterion = 'gini'
+# splitter = 'best'
+# max_depth = None
+# max_features = 'auto'
+# min_samples_split = 2
+# min_samples_leaf = 1
+# class_weight = 'balanced'
+
+# LOW COMPLEXITY OPTIMISED Low Complexity Cross Validation Round 1
 criterion = 'gini'
 splitter = 'best'
-max_depth = 6
+max_depth = None
 max_features = 'auto'
 min_samples_split = 2
 min_samples_leaf = 1
-class_weight = 'balanced'
+class_weight = None
+
+# # MEDIUM COMPLEXITY OPTIMISED
+# criterion = 'entropy'
+# splitter = 'random'
+# max_depth = 16
+# max_features = 139
+# min_samples_split = 32
+# min_samples_leaf = 10
+# class_weight = 'balanced'
+#
+# # HIGH COMPLEXITY OPTIMISED
+# criterion = 'gini'
+# splitter = 'random'
+# max_depth = 122
+# max_features = 139
+# min_samples_split = 17
+# min_samples_leaf = 1
+# class_weight = 'balanced'
 
 def get_config():
     model_estimation_config = Obj(
@@ -33,18 +61,18 @@ def get_config():
         test_mode=global_test_mode,
         artifact_name=global_artifact_name,
         model=global_model,
-        id=MODEL_ESTIMATION_RUN_ID,
+        # id=MODEL_ESTIMATION_RUN_ID,
         # Function Parameters
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
-        run_name='resample Test confidence 2',
+        run_name='XGBoost Variance Estimation',
         notes='notes',
         is_d_tree=True,
-        test_repeats=[3, 5, 8, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000],
-        n_repeats=1000,
-        n_samples=0.8,
-        confidence_level=95,
+        test_repeats=[3, 5, 10, 30, 100, 250],
+        n_repeats=200,
+        n_samples=1.0,
+        confidence_level=99,
         time_units='mins',
         time_threshold=None,
         ste_threshold=None,
@@ -66,17 +94,18 @@ def get_config():
         test_mode=global_test_mode,
         artifact_name=global_artifact_name,
         model=global_model,
-        id=CROSS_VALIDATION_RUN_ID,
+        # id=CROSS_VALIDATION_RUN_ID,
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
         notes='Decision Tree',
-        run_name='dt cross val 3',
+        run_name='XGBoost Round 1',
         run_sweep=False,
+        sweep_name='XgBoost Round 1',
         k_folds=10,
-        n_repeats=100,
-        confidence_level=95,
+        n_repeats=3,
+        confidence_level=99,
         # Non-Sweep Model Parameters
         criterion=criterion,
         splitter=splitter,
@@ -94,19 +123,19 @@ def get_config():
         cloud_log=global_cloud_log,
         test_mode=global_test_mode,
         artifact_name=global_artifact_name,
-        model=f'FIMP-{global_model}',
-        id=FEATURE_IMPORTANCE_RUN_ID,
+        model=global_model,
+        # id=FEATURE_IMPORTANCE_RUN_ID,
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        run_name='Decision Tree Feature Importance',
+        run_name='D-Tree Low Complexity Feature Importance Round 1',
         notes='Notes',
-        n_jobs=1,
+        n_jobs=-1,
         target_datasets=[('x_train', 'y_train'), ('x_hold_out', 'y_hold_out')],
-        n_repeats=3,
-        confidence_level=95,
-        run_threshold_method=True,
+        n_repeats=200,
+        confidence_level=99,
+        run_threshold_method=False,
         # model parameters
         criterion=criterion,
         splitter=splitter,

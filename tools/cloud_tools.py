@@ -20,7 +20,6 @@ def sweep_init(meta_data, is_sweep):
         notes=meta_data.notes,
         allow_val_change=True,
         name=meta_data.run_name,
-        id=meta_data.id
     )
 
 
