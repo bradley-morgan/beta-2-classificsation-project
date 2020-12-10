@@ -31,7 +31,7 @@ wandb.init(
 config = wandb.config
 
 # Load Data_set
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 # base_estimator = DecisionTreeClassifier(max_depth=config.max_depth_base_estimator)
 base_estimator = RandomForestClassifier(n_jobs=-1)
 

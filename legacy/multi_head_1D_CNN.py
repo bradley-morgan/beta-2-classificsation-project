@@ -46,7 +46,7 @@ def cnn_head(input, filters, kernel_size):
 
 
 # Load Data_set
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 
 #Balance Data or set Class Weights
 vals, counts = np.unique(data.y_train, return_counts=True)

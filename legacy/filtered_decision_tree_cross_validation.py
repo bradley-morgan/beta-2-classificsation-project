@@ -38,7 +38,7 @@ run = wandb.init(
 )
 config = wandb.config
 
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 
 # Cross validation
 cross_val_mcc_scores = []

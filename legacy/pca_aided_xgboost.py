@@ -9,7 +9,7 @@ from sklearn.metrics import matthews_corrcoef, make_scorer
 from tools.DatasetCompiler import DatasetCompiler
 from xgboost import XGBClassifier
 
-data = DatasetCompiler.load_from_pickle('../data/processed/non-filtered/lrg_clean_data_v2.pickle')
+data = DatasetCompiler.load_from_local('../data/processed/non-filtered/lrg_clean_data_v2.pickle')
 
 variance_threshold = 0.40
 model = pca(n_components=variance_threshold,  )

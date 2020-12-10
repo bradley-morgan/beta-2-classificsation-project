@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from scipy.stats import sem
 import numpy as np
 from tools.anonymousClass import Obj
-from scipy.stats import wilcoxon, norm, normaltest
+from scipy.stats import wilcoxon, norm, shapiro
 from statsmodels.stats.proportion import proportion_confint
 from sklearn.metrics import matthews_corrcoef, accuracy_score, confusion_matrix
 
@@ -15,8 +15,8 @@ def local_load_model(file_name):
     return model
 
 
-def local_save_model(model, file_name: str, mete_data: dict, overwrite=False, return_path=False):
-    dir_path = './saved_models'
+def local_save_model(model, file_name: str, mete_data: dict, overwrite=False, return_path=False, dir_path='./saved_models'):
+
     if not os.path.isdir(dir_path):
         os.mkdir(dir_path)
 
@@ -87,11 +87,8 @@ def get_model_performance(y_true, y_preds):
 
 
 def is_normal_distribution(score):
-    if len(score) < 8:
-        return None
-
-    _, p = normaltest(score)
-    return p < 1e-3
+    _, p = shapiro(score)
+    return p > 1e-3
 
 
 def get_z_score(confidence_level):
@@ -134,10 +131,10 @@ def get_wilcoxon_stats(scores_A, scores_B, alpha=0.05, alternative_hypothesis='t
     )
 
 
-def get_normal_confidence_interval(scores: list, confidence_level, score_range:tuple, force_normal=False):
+def get_normal_confidence_interval(scores: list, confidence_level, score_range:tuple):
     # This method is based on the assumption that samples are normally distributed check this and report a warning
     # if samples are non-normal
-    if not force_normal and not is_normal_distribution(scores):
+    if not is_normal_distribution(scores):
         output = get_resampled_confidence_interval(
             scores,
             score_range,

@@ -9,7 +9,7 @@ from tqdm import tqdm
 import pandas as pd
 
 
-data = DatasetCompiler.load_from_pickle('../data/processed/non-filtered/lrg_clean_data_v2.pickle')
+data = DatasetCompiler.load_from_local('../data/processed/non-filtered/lrg_clean_data_v2.pickle')
 vals, counts_after_sampling = np.unique( data.y_train, return_counts=True)
 
 # Fit a model on whole training dataset using either optimised or default params for testing

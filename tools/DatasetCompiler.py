@@ -11,7 +11,8 @@ from transforms.remove_features import RemoveFeatures
 from transforms.rename_feature import RenameFeatures
 from configs import get
 import pickle
-
+import tools.cloud_tools as c_tools
+from joblib import load
 
 
 """
@@ -156,17 +157,24 @@ class DatasetCompiler():
             print(f'Pickle Save Successful for: {dest}')
 
     @staticmethod
-    def load_from_pickle(file_path):
+    def load_from_local(file_path:str):
 
         if not os.path.exists(file_path):
             raise FileExistsError(f'File Does not exist: {file_path} try using tools.path')
 
+        if file_path.endswith('.joblib'):
+            data = load(file_path)
+            print(f'Joblib Load Successful for: {file_path}')
+            return data
 
-        with open(file_path, 'rb') as input_put_file:
-            data = pickle.load(input_put_file)
-            print(f'Pickle Load Successful for: {file_path}')
+        elif file_path.endswith('.pickle'):
+            with open(file_path, 'rb') as input_put_file:
+                data = pickle.load(input_put_file)
+                print(f'Pickle Load Successful for: {file_path}')
+            return data
 
-        return data
+        else:
+            raise ValueError(f'Not supported file type use pickle or joblib: {file_path}')
 
 
 if __name__ == "__main__":
@@ -193,7 +201,7 @@ if __name__ == "__main__":
         project_name='b2ar-filter-rfc-optimisation',
         src='data/no-filter',
         y_labels='target',
-        test_size=0.1,
+        test_size=0.02,
         notes='This is test script for rfc sweeps',
         clean_features=dict(
             exceptions=[non_filtered_clean_feature] # For non-filtered = Action
@@ -238,7 +246,7 @@ if __name__ == "__main__":
 
     data_sets = ChangeNans(config.change_nans)(data_sets)
     data = data_sets.provide(non_filter_name, 'int64')
-    data_sets.save_as_pickle(data, dest='../data/processed/non-filtered', name='dataset1-10percent-hold-out.pickle')
+    data_sets.save_as_pickle(data, dest='../data/processed/non-filtered', name='dataset1-2percent-hold-out.pickle')
 
     shape_after_impute = data_sets.datasets[non_filter_name]["data"].shape
     cross_vals, cross_counts = np.unique(data.y_train, return_counts=True)
@@ -253,11 +261,13 @@ if __name__ == "__main__":
     #
     run = wandb.init(
         project='B2AR-Unfiltered',
-        name='Dataset Information'
+        name='Dataset Information',
+        config=config.to_dict()
     )
 
     run.log({'Dataset Information': wandb.Table(dataframe=dataset_info)})
     run.log({'Imputations Per Feature': wandb.Table(dataframe=imputes_per_feature_df)})
+    c_tools.cloud_save(data, 'dataset1-5percent-hold-out.pickle', run)
 
 
     # Feature and sample size after data removal and final class balance

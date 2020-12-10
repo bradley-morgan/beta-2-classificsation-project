@@ -27,7 +27,7 @@ wandb.init(
 config = wandb.config
 
 # Load Data_set
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 cv = RepeatedStratifiedKFold(n_splits=config.k_folds, n_repeats=config.repeats)
 
 # Fit and Validate models then generate confusion matrix

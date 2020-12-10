@@ -38,7 +38,7 @@ def matthews_correlation_coefficient(y_true, y_pred):
     return num / K.sqrt(den + K.epsilon())
 
 # Load Data_set
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 
 #Balance Data or set Class Weights
 vals, counts = np.unique(data.y_train, return_counts=True)

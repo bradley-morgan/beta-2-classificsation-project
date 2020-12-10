@@ -89,7 +89,7 @@ def resample(X, y, resample_percentage):
 
 
 def get_data(src):
-    data = DatasetCompiler.load_from_pickle(src)
+    data = DatasetCompiler.load_from_local(src)
     vals, counts_before_sampling = np.unique(data.y_train, return_counts=True)
 
     return Obj(

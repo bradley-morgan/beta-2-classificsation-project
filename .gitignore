@@ -133,7 +133,8 @@ Beta-2-env
 b2ar-env
 
 # Data folder
-data/
+data/filtered
+data/no-filter
 
 # .DS_Store
 .DS_Store

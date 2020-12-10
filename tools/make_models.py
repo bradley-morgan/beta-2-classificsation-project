@@ -3,8 +3,8 @@ from xgboost import XGBClassifier
 import tools.model_tools as m_tools
 import tools.cloud_tools as c_tools
 
-def make_model(model_type):
 
+def make_model(model_type):
     if model_type == 'decision_tree' or model_type == 'd_tree' or model_type == 'DecisionTree' or model_type == 'FIMP-dt':
         return decision_tree_contrustor
 
@@ -34,10 +34,24 @@ def make_decision_tree(m_config):
 
 def make_xgboost(m_config):
     if m_config.test_mode:
-        return XGBClassifier()
-
+        return XGBClassifier(tree_method='gpu_hist')
     else:
-        return XGBClassifier()
+        return XGBClassifier(
+            n_estimators=m_config.n_estimators,
+            max_depth=m_config.max_depth,
+            learning_rate=m_config.learning_rate,
+            subsample=m_config.subsample,
+            colsample_bytree=m_config.colsample_bytree,
+            booster=m_config.booster,
+            gamma=m_config.gamma,
+            eta=m_config.eta,
+            min_child_weight=m_config.min_child_weight,
+            max_delta_step=m_config.max_delta_step,
+            reg_alpha=m_config.reg_alpha,
+            reg_lambda=m_config.reg_lambda,
+            scale_pos_weight=m_config.scale_pos_weight,
+            tree_method='gpu_hist'
+        )
 
 
 def decision_tree_contrustor(m_config):
@@ -50,7 +64,7 @@ def decision_tree_contrustor(m_config):
         return model.model
 
     elif m_config.load_model_from == 'train':
-        return make_decision_tree
+        return make_decision_tree(m_config)
 
     else:
         raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
@@ -66,9 +80,7 @@ def xgboost_constructor(m_config):
         return model.model
 
     elif m_config.load_model_from == 'train':
-        return make_xgboost
+        return make_xgboost(m_config)
 
     else:
         raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
-
-

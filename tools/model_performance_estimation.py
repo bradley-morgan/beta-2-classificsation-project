@@ -1,5 +1,6 @@
 from tqdm import tqdm
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
+from sklearn.tree import DecisionTreeClassifier
 from tools.anonymousClass import Obj
 from tools.model_tools import get_model_performance
 from tools.DatasetCompiler import DatasetCompiler
@@ -159,11 +160,10 @@ class ModelEstimations:
         self.time_units = config.time_units
         self.time_threshold = config.time_threshold
         self.ste_threshold = config.ste_threshold
-        self.is_d_tree = config.is_d_tree
 
         self.pse_data = Obj()
         self.m_uncertainty_data = Obj()
-        self.data = DatasetCompiler.load_from_pickle(self.src)
+        self.data = DatasetCompiler.load_from_local(self.src)
 
         self.cloud_log = cloud_log
 
@@ -367,7 +367,7 @@ class ModelEstimations:
         self.run.log({'Bootstrap MCC Descriptive Statistics': wandb.Table(dataframe=stat_df)})
 
         # Log Decision Tree Structure If Applicable
-        if self.is_d_tree:
+        if isinstance(results.model, DecisionTreeClassifier):
             self.image_saver.save_graphviz(
                 graph_name='Decision Tree Structure',
                 model=results.model,

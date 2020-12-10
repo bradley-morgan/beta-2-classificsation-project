@@ -31,7 +31,7 @@ wandb.init(
 config = wandb.config
 
 # Load Data_set
-data = DatasetCompiler.load_from_pickle(config.src)
+data = DatasetCompiler.load_from_local(config.src)
 
 undersample = RandomUnderSampler(sampling_strategy='majority')
 x_train, y_train = undersample.fit_resample(data.x_train, data.y_train)
