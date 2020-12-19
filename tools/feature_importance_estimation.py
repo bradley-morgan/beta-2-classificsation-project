@@ -167,7 +167,6 @@ class FeatureImportances:
 
                 progress_bar.update(1)
 
-
     def correlate_shaps(self, shap, X, y, feature_names):
         # import matplotlib as plt
         # Make a copy of the input data
@@ -204,60 +203,73 @@ class FeatureImportances:
 
         return correl
 
+
+
     def shap_feature_importance(self, model):
 
         if self.config.load_model_from == 'train':
             model.fit(self.data['x_train'], self.data['y_train'])
+        
+        with tqdm(total=len(self.target_datasets), bar_format='{l_bar}{bar:50}{r_bar}{bar:-50b}',
+                  desc=f'Feature Importance Cycles: {len(self.target_datasets)}, Repeats: {self.n_repeats}',
+                  position=0) as progress_bar:
+            
+            for dataset in self.target_datasets:
+                x = dataset[0]
+                y = dataset[1]
+                x_data = self.data[x]
+                y_data = self.data[y]
+        
+                shap_vales = shap.TreeExplainer(model).shap_values(x_data)
+                shap_vales = shap_vales[0]
+                correl = self.correlate_shaps(shap_vales, x_data ,y_data, self.data['feature_names'])
+        
+                # m_tools.local_save_model(correl, 'd_tree_feature_imp.joblib', None, dir_path='./analysis')
+                # correl.to_csv('./analysis/d_tree_feature_imp.csv')
+        
+                self.run.log({f'Feature Importance Correlation Table {x}': wandb.Table(dataframe=correl)})
 
-        shap_vales = shap.TreeExplainer(model).shap_values(self.data['x_train'])
-        correl = self.correlate_shaps(shap_vales, self.data['x_train'] ,self.data['y_train'], self.data['feature_names'])
-
-        m_tools.local_save_model(correl, 'XGBoost_feature_imp.joblib', None, dir_path='./analysis')
-        correl.to_csv('./analysis/XGBoost_feature_imp.csv')
-
-        self.run.log({'Feature Importance Correlation Table': wandb.Table(dataframe=correl)})
-
-        sns.set()
-        shap.summary_plot(
-            shap_values=shap_vales,
-            features=self.data['x_train'],
-            feature_names=self.data['feature_names'],
-            show=False,
-            plot_type='dot'
-        )
-        plt.tight_layout()
-        self.image_saver.save(plot=plt.gcf(),
-                              name='Test', format='png')
-
-        plt.clf()
-
-        fig1 = shap.summary_plot(
-            shap_vales,
-            self.data['x_train'],
-            plot_type='bar',
-            feature_names=self.data['feature_names'],
-            plot_size=(22, 9),
-            show=False
-        )
-        self.image_saver.save(plot=plt.gcf(),
-                              name='Test1', format='png')
-
-        plt.clf()
-
-        fig2 = shap.dependence_plot(
-            '193/CB - /1/C Hydrophobic',
-            shap_vales,
-            self.data['x_train'],
-            feature_names=self.data['feature_names'],
-            x_jitter=0.05,
-            color='#000000',
-            show=False
-        )
-
-        self.image_saver.save(plot=plt.gcf(),
-                              name='Test2', format='png')
-        a = 0
-
+                self.image_saver.save_graphviz(
+                    model, self.data['feature_names'], ['ant', 'ag'], 'Tree Structure'
+                )
+        
+                sns.set()
+                shap.summary_plot(
+                    shap_values=shap_vales,
+                    features=x_data,
+                    feature_names=self.data['feature_names'],
+                    show=False,
+                    plot_type='dot',
+                    max_display=10
+                )
+                plt.tight_layout()
+                self.image_saver.save(plot=plt.gcf(),
+                                      name=f'Local Feature Importance {x}', format='png')
+                plt.clf()
+        
+                shap.summary_plot(
+                    shap_vales,
+                    x_data,
+                    plot_type='bar',
+                    feature_names=self.data['feature_names'],
+                    show=False,
+                    max_display=10
+                )
+                self.image_saver.save(plot=plt.gcf(),
+                                      name=f'Global Feature Importance {x}', format='png')
+        
+                # fig2 = shap.dependence_plot(
+                #     '193/CB - /1/C Hydrophobic',
+                #     shap_vales,
+                #     x_data,
+                #     feature_names=self.data['feature_names'],
+                #     x_jitter=0.05,
+                #     color='#000000',
+                #     show=False
+                # )
+                #
+                # self.image_saver.save(plot=plt.gcf(),
+                #                       name='Test2', format='png')
 
     def get_feature_importances(self):
 

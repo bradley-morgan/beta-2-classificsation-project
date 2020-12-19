@@ -189,7 +189,6 @@ if __name__ == "__main__":
     filter_remove_feature = 'Ligand_Pose'
     filtered_clean_feature = 'target'
 
-
     non_filter_name = 'merged-3sn6-4lde-5jqh'
     non_filter_groups = [('3sn6-ant', '3sn6-ag'), ('4lde-ant', '4lde-ag'), ('5jqh-ant', '5jqh-ag')]
     non_filter_group_names = ['3sn6', '4lde', '5jqh']
@@ -199,21 +198,21 @@ if __name__ == "__main__":
 
     config = Obj(
         project_name='b2ar-filter-rfc-optimisation',
-        src='data/no-filter',
+        src='data/filtered',
         y_labels='target',
         test_size=0.02,
         notes='This is test script for rfc sweeps',
         clean_features=dict(
-            exceptions=[non_filtered_clean_feature] # For non-filtered = Action
+            exceptions=[filtered_clean_feature] # For non-filtered = Action
         ),
         rename_features=dict(
             renames=dict(Action='target')
         ),
         merge=dict(
             merge_all=True,
-            merge_all_name=non_filter_name,
-            groups=non_filter_groups,
-            group_names=non_filter_group_names
+            merge_all_name=filter_name,
+            groups=filter_groups,
+            group_names=filter_group_names
         ),
         remove_features=dict(
             search_params=["Clash", "Proximal"]
@@ -227,28 +226,28 @@ if __name__ == "__main__":
     data_sets = DatasetCompiler(src=config.src, y_labels=config.y_labels, test_size=config.test_size)
     data_sets.load()
     # Apply only for filtered data
-    # data_sets.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
-    # data_sets.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
-    data_sets.remove_feature(feature_name=non_filter_remove_feature)
+    data_sets.apply_item(feature_name='target', item=1, names=['R-ag', 'B2in-ag', 'Z-ag'])
+    data_sets.apply_item(feature_name='target', item=0, names=['R-ant', 'B2in-ant', 'Z-ant'])
+    data_sets.remove_feature(feature_name=filter_remove_feature)
     data_sets = CleanFeatureNames(config.clean_features)(data_sets)
-    data_sets = RenameFeatures(config.rename_features)(data_sets)
+    # data_sets = RenameFeatures(config.rename_features)(data_sets)
     data_sets = RemoveFeatures(config.remove_features)(data_sets)
     data_sets = MergeDatasets(config.merge)(data_sets)
     # Total NaN values number of data points imputed
-    number_imputs_per_feature = data_sets.datasets[non_filter_name]["data"].isna().sum()
+    number_imputs_per_feature = data_sets.datasets[filter_name]["data"].isna().sum()
     imputes_per_feature_df = pd.DataFrame(zip(number_imputs_per_feature.index, number_imputs_per_feature.to_numpy()),
                                           columns=['Features', 'Number of NaNs'])
 
-    shape_before_impute = data_sets.datasets[non_filter_name]["data"].shape
+    shape_before_impute = data_sets.datasets[filter_name]["data"].shape
     total_datapoints = shape_before_impute[0] * shape_before_impute[1]
     total_imputes = number_imputs_per_feature.sum()
     total_recorded_samples = total_datapoints - total_imputes
 
     data_sets = ChangeNans(config.change_nans)(data_sets)
-    data = data_sets.provide(non_filter_name, 'int64')
-    data_sets.save_as_pickle(data, dest='../data/processed/non-filtered', name='dataset1-2percent-hold-out.pickle')
+    data = data_sets.provide(filter_name, 'int64')
+    data_sets.save_as_pickle(data, dest='../data/processed/filtered', name='dataset1-2percent-hold-out.pickle')
 
-    shape_after_impute = data_sets.datasets[non_filter_name]["data"].shape
+    shape_after_impute = data_sets.datasets[filter_name]["data"].shape
     cross_vals, cross_counts = np.unique(data.y_train, return_counts=True)
     hold_vals, hold_counts = np.unique(data.y_hold_out, return_counts=True)
 
@@ -260,14 +259,14 @@ if __name__ == "__main__":
 
     #
     run = wandb.init(
-        project='B2AR-Unfiltered',
+        project='B2AR-Filtered',
         name='Dataset Information',
         config=config.to_dict()
     )
 
     run.log({'Dataset Information': wandb.Table(dataframe=dataset_info)})
     run.log({'Imputations Per Feature': wandb.Table(dataframe=imputes_per_feature_df)})
-    c_tools.cloud_save(data, 'dataset1-5percent-hold-out.pickle', run)
+    c_tools.cloud_save(data, 'dataset1-2percent-hold-out.pickle', run)
 
 
     # Feature and sample size after data removal and final class balance

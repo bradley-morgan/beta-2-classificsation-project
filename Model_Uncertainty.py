@@ -12,5 +12,5 @@ emp = ModelEstimations(meta_data, make_model(meta_data.model), cloud_log=meta_da
 emp.estimate_model_uncertainty(
     meta_data.confidence_level, meta_data.n_repeats, meta_data.n_samples
 )
-#emp.estimate_n_repeats(0.99, 0.014163812136957131, (0.01, 0.001), 10)
+# emp.estimate_n_repeats(0.99, 0.005625883785043747, (0.01, 0.001), 10)
 

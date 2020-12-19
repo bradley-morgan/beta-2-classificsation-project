@@ -39,6 +39,8 @@ class MergeDatasets:
                     merged_df = merged_df.append(data, sort=False)
 
                 out_dataset[group_name] = {'data': merged_df}
+        else:
+            out_dataset = datasets
 
         if self.merge_all:
             j_key = self.group_names.pop()

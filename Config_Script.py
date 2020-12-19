@@ -1,7 +1,7 @@
 from tools.anonymousClass import Obj
 from tools.make_models import make_model
 
-EXPERIMENT = 'unfiltered'
+EXPERIMENT = 'filtered'
 
 
 def get_config():
@@ -13,15 +13,15 @@ def get_config():
 
 
 def get_filtered_config():
-    global_src = 'data/processed/filtered/dataset1-10percent-hold-out.pickle'
+    global_src = 'data/processed/filtered//dataset1-2percent-hold-out.pickle'
     global_project_name = 'B2AR-Filtered'
     global_cloud_log = True
     global_test_mode = False
     global_artifact_name = 'DecisionTree'
     global_model = 'decision_tree'
     global_load_model_from = 'train'
-    global_load_run_path = ' '
-    global_model_file_name = ' '
+    global_load_run_path = 'bradamorg/B2AR-Filtered/23xzu26f'
+    global_model_file_name = 'v15_CV-DecisionTree.joblib'
 
     # Model Parameters Need to match global model
     # DEFAULT
@@ -36,8 +36,8 @@ def get_filtered_config():
     # LOW COMPLEXITY OPTIMISED Low Complexity Cross Validation Round 1
     criterion = 'gini'
     splitter = 'best'
-    max_depth = None
-    max_features = 'auto'
+    max_depth = 10
+    max_features = None
     min_samples_split = 2
     min_samples_leaf = 1
     class_weight = None
@@ -115,10 +115,10 @@ def get_filtered_config():
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
-        run_name='XGBoost Variance Estimation',
+        run_name='Max Depth 10',
         notes='notes',
-        test_repeats=[3, 5, 10, 30, 100, 250],
-        n_repeats=200,
+        test_repeats=[3, 5, 10, 30, 50, 80, 100, 250, 500, 650, 750, 850, 1000, 1250, 1500, 1750, 2000],
+        n_repeats=3,
         n_samples=1.0,
         confidence_level=99,
         time_units='mins',
@@ -148,7 +148,7 @@ def get_filtered_config():
         model_file_name=global_model_file_name,
         # Function Parameters
         notes='Decision Tree',
-        run_name='D_Tree Cross Validation',
+        run_name='Max Depth 10',
         run_sweep=False,
         k_folds=10,
         n_repeats=3,
@@ -176,10 +176,11 @@ def get_filtered_config():
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        run_name='D-Tree Low Complexity Feature Importance Round 1',
+        run_name='test feat imp',
         notes='Notes',
         n_jobs=-1,
         target_datasets=[('x_train', 'y_train'), ('x_hold_out', 'y_hold_out')],
+        method='shap',  # shap or default
         n_repeats=200,
         confidence_level=99,
         run_threshold_method=False,
@@ -202,7 +203,7 @@ def get_filtered_config():
 
 def get_unfiltered_config():
     global_src = 'data/processed/non-filtered/dataset1-2percent-hold-out.pickle'
-    global_project_name = 'B2AR-Unfiltered'
+    global_project_name = 'B2AR-Unfiltered-test'
     global_cloud_log = True
     global_test_mode = False
     global_artifact_name = 'XGBoost'
@@ -404,7 +405,7 @@ def get_unfiltered_config():
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        run_name='XGBoost TEST',
+        run_name='XGBoost Feature Importance',
         notes='Notes',
         n_jobs=-1,
         target_datasets=[('x_train', 'y_train'), ('x_hold_out', 'y_hold_out')],
