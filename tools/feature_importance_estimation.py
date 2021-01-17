@@ -203,8 +203,6 @@ class FeatureImportances:
 
         return correl
 
-
-
     def shap_feature_importance(self, model):
 
         if self.config.load_model_from == 'train':
@@ -221,11 +219,11 @@ class FeatureImportances:
                 y_data = self.data[y]
         
                 shap_vales = shap.TreeExplainer(model).shap_values(x_data)
-                shap_vales = shap_vales[0]
+                # shap_vales = shap_vales[1]
                 correl = self.correlate_shaps(shap_vales, x_data ,y_data, self.data['feature_names'])
         
                 # m_tools.local_save_model(correl, 'd_tree_feature_imp.joblib', None, dir_path='./analysis')
-                # correl.to_csv('./analysis/d_tree_feature_imp.csv')
+                correl.to_csv('./analysis/xgboost_feature_imp_agonist.csv')
         
                 self.run.log({f'Feature Importance Correlation Table {x}': wandb.Table(dataframe=correl)})
 
@@ -257,6 +255,9 @@ class FeatureImportances:
                 )
                 self.image_saver.save(plot=plt.gcf(),
                                       name=f'Global Feature Importance {x}', format='png')
+
+
+                progress_bar.update()
         
                 # fig2 = shap.dependence_plot(
                 #     '193/CB - /1/C Hydrophobic',

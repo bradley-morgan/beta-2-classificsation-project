@@ -16,8 +16,8 @@ og_features = og_data.feature_names
 src = 'data/ZINC/unfiltered'
 data_sets = DatasetCompiler(src=src, y_labels="target", test_size=0.02)
 data_sets.load()
-data_sets.remove_feature(feature_name='Ligand_Pose2')
-data_sets = CleanFeatureNames(dict(exceptions=[]))(data_sets)
+# data_sets.remove_feature(feature_name='Ligand_Pose2')
+data_sets = CleanFeatureNames(dict(exceptions=['Ligand_Pose2']))(data_sets)
 data_sets = MergeDatasets(config=dict(
     merge_all=True,
     merge_all_name='ZINC-Merged',
@@ -25,6 +25,8 @@ data_sets = MergeDatasets(config=dict(
     group_names=['3sn6-3sn6', '4lde-4lde', '5jqh-5jqh']
 ))(data_sets)
 data_sets = ChangeNans(config=dict(value=0))(data_sets)
+zinc_ligand_poses = data_sets.datasets['ZINC-Merged']['data']['Ligand_Pose2'].to_numpy()
+data_sets.datasets['ZINC-Merged']['data'].drop(['Ligand_Pose2'], axis=1, inplace=True)
 zinc_features = data_sets.datasets['ZINC-Merged']['data'].columns.to_numpy()
 zinc_data = data_sets.datasets['ZINC-Merged']['data'].to_numpy().astype('int64')
 
@@ -39,7 +41,8 @@ xgboost_model = xgboost_constructor(m_config=Obj(
 xgboost_preds = xgboost_model.predict(zinc_data)
 xgboost_y_probs = xgboost_model.predict_proba(zinc_data)
 
-xgboost_zinc_df = pd.DataFrame(zip(xgboost_preds, xgboost_y_probs[:,0], xgboost_y_probs[:, 1]),
-                               columns=['Class Prediction', 'Ant Probability', 'Ag Probability'])
+xgboost_zinc_df = pd.DataFrame(zip(zinc_ligand_poses, xgboost_preds, xgboost_y_probs[:,0], xgboost_y_probs[:, 1]),
+                               columns=['Ligand Pose', 'Class Prediction', 'Ant Probability', 'Ag Probability'])
 
-# xgboost_zinc_df.to_csv('./analysis/xgboost_zinc_predictions.csv')
+
+xgboost_zinc_df.to_csv('./analysis/V2_xgboost_zinc_predictions.csv')

@@ -1,7 +1,7 @@
 from tools.anonymousClass import Obj
 from tools.make_models import make_model
 
-EXPERIMENT = 'filtered'
+EXPERIMENT = 'unfiltered'
 
 
 def get_config():
@@ -13,15 +13,15 @@ def get_config():
 
 
 def get_filtered_config():
-    global_src = 'data/processed/filtered//dataset1-2percent-hold-out.pickle'
-    global_project_name = 'B2AR-Filtered'
+    global_src = 'data/processed/non-filtered/dataset1-2percent-hold-out.pickle'
+    global_project_name = 'B2AR-Unfiltered-D-Tree'
     global_cloud_log = True
     global_test_mode = False
     global_artifact_name = 'DecisionTree'
     global_model = 'decision_tree'
     global_load_model_from = 'train'
     global_load_run_path = 'bradamorg/B2AR-Filtered/23xzu26f'
-    global_model_file_name = 'v15_CV-DecisionTree.joblib'
+    global_model_file_name = 'v15_CV-unfiltered-DecisionTree.joblib'
 
     # Model Parameters Need to match global model
     # DEFAULT
@@ -115,9 +115,9 @@ def get_filtered_config():
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
-        run_name='Max Depth 10',
+        run_name='Repeats Estimation',
         notes='notes',
-        test_repeats=[3, 5, 10, 30, 50, 80, 100, 250, 500, 650, 750, 850, 1000, 1250, 1500, 1750, 2000],
+        test_repeats=[2000],
         n_repeats=3,
         n_samples=1.0,
         confidence_level=99,
@@ -148,10 +148,10 @@ def get_filtered_config():
         model_file_name=global_model_file_name,
         # Function Parameters
         notes='Decision Tree',
-        run_name='Max Depth 10',
+        run_name='Cross validation',
         run_sweep=False,
         k_folds=10,
-        n_repeats=3,
+        n_repeats=22,
         confidence_level=99,
         # Non-Sweep Model Parameters
         criterion=criterion,
@@ -203,7 +203,7 @@ def get_filtered_config():
 
 def get_unfiltered_config():
     global_src = 'data/processed/non-filtered/dataset1-2percent-hold-out.pickle'
-    global_project_name = 'B2AR-Unfiltered-test'
+    global_project_name = 'B2AR-Unfiltered'
     global_cloud_log = True
     global_test_mode = False
     global_artifact_name = 'XGBoost'
@@ -405,7 +405,7 @@ def get_unfiltered_config():
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        run_name='XGBoost Feature Importance',
+        run_name='XGBoost Feature Importance Agonist',
         notes='Notes',
         n_jobs=-1,
         target_datasets=[('x_train', 'y_train'), ('x_hold_out', 'y_hold_out')],

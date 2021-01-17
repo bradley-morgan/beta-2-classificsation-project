@@ -14,7 +14,7 @@ class CleanFeatureNames:
             for col_name in datasets[key]["data"].columns:
 
                 if col_name in self.exceptions:
-                    break
+                    continue
 
                 new_col_names = col_name
                 isLetterA = new_col_names.startswith("A")
