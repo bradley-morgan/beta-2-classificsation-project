@@ -1,15 +1,16 @@
-class RemoveFeatures:
+
+class Transform:
 
     def __init__(self, config):
-        self.search_params = config["search_params"]
+        self.config = config
 
-    def __call__(self, datasetCompiler):
+    def __call__(self, datasets: dict):
 
-        keys = datasetCompiler.datasets.keys()
-        search_params = self.search_params
+        keys = datasets.keys()
+        search_params = self.config['search_params']
 
         for key in keys:
-            data = datasetCompiler.datasets[key]["data"]
+            data = datasets[key]['data']
             cols = []
             for col in data.columns:
                 finds = []
@@ -22,7 +23,6 @@ class RemoveFeatures:
                 if not any(finds):
                     cols.append(col)
 
-            datasetCompiler.datasets[key]["data"] = data[cols]
-        datasetCompiler.applied_transforms.append("Remove_features")
+            datasets[key]['data'] = data[cols]
 
-        return datasetCompiler
+        return datasets

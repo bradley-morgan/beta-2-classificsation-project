@@ -1,7 +1,7 @@
 from tools.anonymousClass import Obj
 from tools.make_models import make_model
 
-EXPERIMENT = 'unfiltered'
+EXPERIMENT = 'filtered'
 
 
 def get_config():
@@ -13,94 +13,38 @@ def get_config():
 
 
 def get_filtered_config():
-    global_src = 'data/processed/non-filtered/dataset1-2percent-hold-out.pickle'
-    global_project_name = 'B2AR-Unfiltered-D-Tree'
+    global_src = 'data/processed/filtered/filter-train-processor_98.pickle'
+    global_project_name = 'B2AR-unfilt-get-shaps'
     global_cloud_log = True
     global_test_mode = False
-    global_artifact_name = 'DecisionTree'
-    global_model = 'decision_tree'
-    global_load_model_from = 'train'
-    global_load_run_path = 'bradamorg/B2AR-Filtered/23xzu26f'
-    global_model_file_name = 'v15_CV-unfiltered-DecisionTree.joblib'
+    global_artifact_name = 'RandomForest-98-46'
+    global_model = 'random_forest'
+    global_load_model_from = 'cloud'
+    global_load_run_path = 'bradamorg/B2AR-Hotfix/3ifm2as1'
+    global_model_file_name = 'CV-RandomForest-98-46.joblib'
+
+    sweep_config = dict(
+        method='grid',
+        metric=dict(
+            goal='maximize',
+            name='mean'
+        ),
+        parameters=dict(
+            max_depth=dict(
+                values=[i for i in range(1, 31)]
+            ),
+            max_features=dict(
+                values=[i for i in range(1, 162)]
+            )
+        )
+    )
 
     # Model Parameters Need to match global model
     # DEFAULT
-    # criterion = 'gini'
-    # splitter = 'best'
-    # max_depth = None
-    # max_features = 'auto'
-    # min_samples_split = 2
-    # min_samples_leaf = 1
-    # class_weight = 'balanced'
-
-    # LOW COMPLEXITY OPTIMISED Low Complexity Cross Validation Round 1
-    criterion = 'gini'
-    splitter = 'best'
-    max_depth = 10
-    max_features = None
-    min_samples_split = 2
-    min_samples_leaf = 1
-    class_weight = None
-
-    # # MEDIUM COMPLEXITY OPTIMISED
-    # criterion = 'entropy'
-    # splitter = 'random'
-    # max_depth = 16
-    # max_features = 139
-    # min_samples_split = 32
-    # min_samples_leaf = 10
-    # class_weight = 'balanced'
-    #
-    # # HIGH COMPLEXITY OPTIMISED
-    # criterion = 'gini'
-    # splitter = 'random'
-    # max_depth = 122
-    # max_features = 139
-    # min_samples_split = 17
-    # min_samples_leaf = 1
-    # class_weight = 'balanced'
-
-    sweep_config = dict(
-        program='Cross_Validation.py',
-        method='bayes',
-        metric=dict(
-            goal='maximize',
-            name='mean_mcc'
-        ),
-        name='D_Tree Cross Validation Round 1',
-        description='Decision Tree Sweep Test',
-        parameters=dict(
-            # criterion=dict(
-            #     values=['gini', 'entropy']
-            # ),
-            # splitter=dict(
-            #     values=['best', 'random']
-            # ),
-            max_depth=dict(
-                distribution='int_uniform',
-                max=5,
-                min=3
-            ),
-            # max_features=dict(
-            #     distribution='int_uniform',
-            #     max=161,
-            #     min=1
-            # ),
-            # min_samples_split=dict(
-            #     distribution='int_uniform',
-            #     max=1000,
-            #     min=1
-            # ),
-            # min_samples_leaf=dict(
-            #     distribution='int_uniform',
-            #     max=1000,
-            #     min=1
-            # ),
-            # class_weight=dict(
-            #     values=['balanced', None]
-            # ),
-        )
-    )
+    max_depth = 5
+    max_features = 5
+    n_estimators = 2000
+    n_jobs=12
 
     model_estimation_config = Obj(
         # Global Parameters
@@ -115,23 +59,20 @@ def get_filtered_config():
         load_model_from=global_load_model_from,
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
-        run_name='Repeats Estimation',
+        run_name='Uncertainty Estimation RFC-98-46',
         notes='notes',
-        test_repeats=[2000],
-        n_repeats=3,
+        test_repeats=[10, 100, 500, 1000, 1500, 2000],
+        n_repeats=8,
         n_samples=1.0,
         confidence_level=99,
         time_units='mins',
         time_threshold=None,
         ste_threshold=None,
         # model parameters
-        criterion=criterion,
-        splitter=splitter,
         max_depth=max_depth,
         max_features=max_features,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf,
-        class_weight=class_weight
+        n_estimators=n_estimators,
+        n_jobs=n_jobs
     )
 
     cross_validation_config = Obj(
@@ -147,20 +88,17 @@ def get_filtered_config():
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        notes='Decision Tree',
-        run_name='Cross validation',
+        notes='Random Forest',
+        run_name='Cross validation RFC-98-3-fold',
         run_sweep=False,
-        k_folds=10,
-        n_repeats=22,
+        k_folds=3,
+        n_repeats=8,
         confidence_level=99,
         # Non-Sweep Model Parameters
-        criterion=criterion,
-        splitter=splitter,
         max_depth=max_depth,
         max_features=max_features,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf,
-        class_weight=class_weight
+        n_estimators=n_estimators,
+        n_jobs=n_jobs
     )
 
     feature_importance_config = Obj(
@@ -176,22 +114,18 @@ def get_filtered_config():
         global_load_run_path=global_load_run_path,
         model_file_name=global_model_file_name,
         # Function Parameters
-        run_name='test feat imp',
+        run_name='Feature Importance RFC-98-46',
         notes='Notes',
-        n_jobs=-1,
+        n_jobs=n_jobs,
         target_datasets=[('x_train', 'y_train'), ('x_hold_out', 'y_hold_out')],
         method='shap',  # shap or default
-        n_repeats=200,
+        n_repeats=30,
         confidence_level=99,
         run_threshold_method=False,
         # model parameters
-        criterion=criterion,
-        splitter=splitter,
         max_depth=max_depth,
         max_features=max_features,
-        min_samples_split=min_samples_split,
-        min_samples_leaf=min_samples_leaf,
-        class_weight=class_weight
+        n_estimators=n_estimators,
     )
 
     return Obj(
@@ -203,7 +137,7 @@ def get_filtered_config():
 
 def get_unfiltered_config():
     global_src = 'data/processed/non-filtered/dataset1-2percent-hold-out.pickle'
-    global_project_name = 'B2AR-Unfiltered'
+    global_project_name = 'B2AR-unfilt-get-shaps'
     global_cloud_log = True
     global_test_mode = False
     global_artifact_name = 'XGBoost'
@@ -241,6 +175,8 @@ def get_unfiltered_config():
     reg_alpha = 0.06229
     reg_lambda = 2.904
     scale_pos_weight = 1
+    objective = 'multi:softmax'
+    num_class = 2
 
     sweep_config = dict(
         program='Cross_Validation.py',
@@ -353,7 +289,7 @@ def get_unfiltered_config():
         max_delta_step=max_delta_step,
         reg_alpha=reg_alpha,
         reg_lambda=reg_lambda,
-        scale_pos_weight=scale_pos_weight
+        scale_pos_weight=scale_pos_weight,
     )
 
     cross_validation_config = Obj(
@@ -389,7 +325,9 @@ def get_unfiltered_config():
         max_delta_step=max_delta_step,
         reg_alpha=reg_alpha,
         reg_lambda=reg_lambda,
-        scale_pos_weight=scale_pos_weight
+        objective=objective,
+        num_class=num_class,
+        # scale_pos_weight=scale_pos_weight
     )
 
     feature_importance_config = Obj(

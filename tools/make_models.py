@@ -1,8 +1,9 @@
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
 import tools.model_tools as m_tools
 import tools.cloud_tools as c_tools
-
+import os
 
 def make_model(model_type):
     if model_type == 'decision_tree' or model_type == 'd_tree' or model_type == 'DecisionTree' or model_type == 'FIMP-dt':
@@ -10,6 +11,10 @@ def make_model(model_type):
 
     elif model_type == 'xgboost' or model_type == 'xgb' or model_type == 'XGBoost' or model_type == 'FIMP-xg':
         return xgboost_constructor
+
+    elif model_type == 'random_forest' or model_type == 'rfc':
+        return rfc_contrustor
+
     else:
         raise ValueError(
             f'{model_type} does not exist as possible model to create. Please implement in make_models')
@@ -32,6 +37,19 @@ def make_decision_tree(m_config):
         )
 
 
+def make_rfc(m_config):
+    if m_config.test_mode:
+        return RandomForestClassifier()
+
+    else:
+        return RandomForestClassifier(
+            n_estimators=m_config.n_estimators,
+            max_depth=m_config.max_depth,
+            max_features=m_config.max_features,
+            n_jobs=m_config.n_jobs
+        )
+
+
 def make_xgboost(m_config):
     if m_config.test_mode:
         return XGBClassifier(tree_method='gpu_hist')
@@ -49,9 +67,28 @@ def make_xgboost(m_config):
             max_delta_step=m_config.max_delta_step,
             reg_alpha=m_config.reg_alpha,
             reg_lambda=m_config.reg_lambda,
-            scale_pos_weight=m_config.scale_pos_weight,
+            # scale_pos_weight=m_config.scale_pos_weight,
+            objective=m_config.objective,
+            num_class=m_config.num_class,
             tree_method='gpu_hist'
         )
+
+
+def rfc_contrustor(m_config):
+    if m_config.load_model_from == 'cloud':
+        model = c_tools.cloud_load(m_config.model_file_name, m_config.global_load_run_path)
+        print(f'Cloud Model Loaded from: {os.path.join(m_config.global_load_run_path, m_config.model_file_name)}')
+        return model
+
+    elif m_config.load_model_from == 'local':
+        model = m_tools.local_load_model(m_config.model_file_name)
+        return model.model
+
+    elif m_config.load_model_from == 'train':
+        return make_rfc(m_config)
+
+    else:
+        raise ValueError(f'{m_config.load_model_from} not a valid option, select cloud, local or train')
 
 
 def decision_tree_contrustor(m_config):

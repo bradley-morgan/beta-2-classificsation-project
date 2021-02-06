@@ -1,0 +1,47 @@
+src: ./data/no-filter
+test_size: 0.02
+transform_src: transforms
+transforms:
+  apply_item:
+    item1:
+      name: 'Action'
+      item: 1
+      apply_to:
+        - 3sn6-ag
+        - 4lde-ag
+        - 5jqh-ag
+    item2:
+      name: 'Action'
+      item: 0
+      apply_to:
+        - 3sn6-ant
+        - 4lde-ant
+        - 5jqh-ant
+
+  clean_features:
+    exceptions:
+      - Action
+      - Ligand_Pose
+      - Ligand_Pose2
+
+  merge:
+    merge_all: True
+    merge_all_name: merged-data
+    groups:
+#      - !!python/tuple [B2in-ant, B2in-ag]
+#      - !!python/tuple [R-ant, R-ag]
+#      - !!python/tuple [Z-ant, Z-ag]
+    group_names:
+#      - b2in
+#      - R
+#      - Z
+
+  remove_features:
+    search_params:
+      - Clash
+      - Proximal
+      - Ligand_Pose
+      - Ligand_Pose2
+
+  change_nans:
+    value: 0

@@ -1,8 +1,7 @@
 from tools.DatasetCompiler import DatasetCompiler
-from transforms.merge_datasets import MergeDatasets
-from transforms.change_nans import ChangeNans
-from transforms.clean_feature_names import CleanFeatureNames
-from transforms.remove_features import RemoveFeatures
+from legacy.transforms.merge_datasets import MergeDatasets
+from legacy.transforms.change_nans import ChangeNans
+from legacy.transforms.clean_feature_names import CleanFeatureNames
 from tools.make_models import xgboost_constructor
 from tools.anonymousClass import Obj
 import wandb

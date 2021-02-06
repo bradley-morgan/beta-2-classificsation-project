@@ -1,101 +1,80 @@
-from tools.DatasetCompiler import DatasetCompiler
-from transforms.merge_datasets import MergeDatasets
-from transforms.change_nans import ChangeNans
-from transforms.clean_feature_names import CleanFeatureNames
-from tools.model_performance_estimation import CrossValidation
-from transforms.remove_features import RemoveFeatures
-from tools.make_models import xgboost_constructor
-from tools.anonymousClass import Obj
+from tools.Data import Preprocess
+from tools.make_models import make_model
+import Config_Script
 import wandb
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import matthews_corrcoef
-from tools.make_models import make_model, decision_tree_contrustor
-import tools.model_tools as m_tools
-from tools.ImageSaver import ImageSaver
+import numpy as np
+import tools.quick_tools as q_tools
 
-run = wandb.init(
-    project='test'
-)
-image_saver = ImageSaver(run)
-# Model Parameters
-model_params = Obj(
-    test_mode=False,
-    model='decision_tree',
-    load_model_from='train',
-    criterion='gini',
-    splitter='best',
-    max_depth=10,
-    max_features=None,
-    min_samples_split=2,
-    min_samples_leaf=1,
-    class_weight=None,
-)
+# TODO Process Ligand Poses
 
-# Get features from data model originally trained on
-og_data = DatasetCompiler.load_from_local('./data/processed/filtered/dataset1-2percent-hold-out.pickle')
-og_features = og_data.feature_names
+wandb.init()
+meta_data = Config_Script.get_config().feature_importance_config
+meta_data.load_model_from = 'cloud'
 
-original_model = decision_tree_contrustor(m_config=Obj(
-    load_model_from='cloud',
-    global_load_run_path='bradamorg/B2AR-Filtered/23xzu26f',
-    model_file_name='v15_CV-DecisionTree.joblib'
-))
+train_data = Preprocess.load_from_local('./data/processed/filtered/filter-train-processor_98.pickle')
+# full_x_train = np.concatenate((train_data.x_train, train_data.x_hold_out), axis=0)
+# full_y_train = np.concatenate((train_data.y_train, train_data.y_hold_out), axis=0)
 
-split_node_idxs = [f for f in original_model.tree_.feature if f >= 0]
-split_node_feature_names = og_features[split_node_idxs]
-og_x_train_reduced = pd.DataFrame(og_data.x_train, columns=og_features)[split_node_feature_names]
-og_x_hold_out_reduced = pd.DataFrame(og_data.x_hold_out, columns=og_features)[split_node_feature_names]
+zinc_data = Preprocess.load_from_local('./data/processed/zinc/filter-zinc-train-processor_98.pickle')
 
-reduced_dataset = Obj(
-    x_train=og_x_train_reduced.to_numpy().astype('int64'),
-    y_train=og_data.y_train,
-    x_hold_out=og_x_hold_out_reduced.to_numpy().astype('int64'),
-    y_hold_out=og_data.y_hold_out
-)
+model = make_model(meta_data.model)(meta_data)
+# model.fit(full_x_train, full_y_train)
 
-reduced_results = CrossValidation(
-    k_folds=10, n_repeats=3, data=reduced_dataset,
-    make_model_func=make_model(model_params.model), model_parameters=model_params
-).run()
-reduced_stats= m_tools.get_descriptive_stats(reduced_results.cross_val_mcc_scores)
-y_pred = reduced_results.model.predict_proba(reduced_dataset.x_train)
+# reduce zinc data to shared features
+zinc_data.data = pd.DataFrame(zinc_data.data, columns=zinc_data.feature_names)
+zinc_data.data = zinc_data.data[train_data.feature_names]
+zinc_data.feature_names = zinc_data.data.columns.to_numpy()
+zinc_data.removed_features = q_tools.process_ligand_poses(zinc_data.removed_features.to_numpy()[:, 0])
 
-zinc_model = reduced_results.model
+# Generalise to ZINC
+zinc_y_preds = model.predict(zinc_data.data)
+zinc_y_proba = model.predict_proba(zinc_data.data)
 
-image_saver.save_graphviz(
-    zinc_model,
-    split_node_feature_names,
-    ['ant', 'ag'],
-    'Reduced Tree'
-)
+# Group predictions across ligand poses
+avg_zinc_groups = pd.DataFrame(
+zip(zinc_data.removed_features, zinc_y_preds), columns=['ligand_pose', 'y_preds']
+).groupby(['ligand_pose'])
 
-# Process ZINC Data then reduce the features to only features the model used to split original data on
-src = 'data/ZINC/filtered'
-data_sets = DatasetCompiler(src=src, y_labels="target", test_size=0.02)
-data_sets.load()
-# data_sets.remove_feature(feature_name='Ligand_Pose2')
-data_sets = CleanFeatureNames(dict(exceptions=['Ligand_Pose2']))(data_sets)
-data_sets = MergeDatasets(config=dict(
-    merge_all=True,
-    merge_all_name='ZINC-Merged',
-    groups=[],
-    group_names=['3sn6-3sn6', '4lde-4lde', '5jqh-5jqh']
-))(data_sets)
-data_sets = ChangeNans(config=dict(value=0))(data_sets)
-zinc_ligand_poses = data_sets.datasets['ZINC-Merged']['data']['Ligand_Pose2'].to_numpy()
-data_sets.datasets['ZINC-Merged']['data'].drop(['Ligand_Pose2'], axis=1, inplace=True)
-zinc_features = data_sets.datasets['ZINC-Merged']['data'].columns.to_numpy()
-shared_features = list(set(og_features).intersection(zinc_features))
-zinc_data = data_sets.datasets['ZINC-Merged']['data'][split_node_feature_names].to_numpy().astype('int64')
+# convert predictions to text representations
+output = pd.DataFrame(zip(zinc_y_preds, zinc_y_proba[:, 1]), columns=['prediction', 'Agonist probability'])
+excel_output = pd.read_csv('./data/filter_correlation/correlation2.csv')
+excel_output.rename(columns={'FILTER': 'Correlation'}, inplace=True)
+x = []
+for j in range(len(excel_output)):
+    p = excel_output['Correlation'].iat[j]
+    if p >= 0.4:
+        x.append('AGONIST')
+    else:
+        x.append('ANTAGONIST')
+excel_output['Correlation'] = x
 
-zinc_preds = zinc_model.predict(zinc_data)
-zinc_y_probs = zinc_model.predict_proba(zinc_data)
+correlation_set = set(excel_output['ID'])
+zinc_set = set(zinc_data.removed_features)
+shared_ligand_poses = correlation_set.intersection(zinc_set)
 
-zinc_df = pd.DataFrame(zip(zinc_ligand_poses, zinc_preds, zinc_y_probs[:,0], zinc_y_probs[:, 1]),
-                               columns=['Ligand Pose','Class Prediction', 'Ant Probability', 'Ag Probability'])
+# Extract only shared ligand poses between correlation and Zinc data
+excel_output = excel_output[excel_output['ID'].isin(shared_ligand_poses)]
 
+# Compute overlap
+avg_rfc_preds = []
+avg_rfc_probs = []
+for shared_ligand in shared_ligand_poses:
+    zinc_group = avg_zinc_groups.get_group(shared_ligand)
+    # average prediction
+    avg_proba = zinc_group['y_preds'].mean()
+    avg_pred = zinc_group['y_preds'].mean().round()
+    avg_pred = 'ANTAGONIST' if avg_pred == 0 else 'AGONIST'
+    avg_rfc_preds.append(avg_pred)
+    avg_rfc_probs.append(avg_proba)
 
-# run.log({'zinc model predictions': wandb.Table(dataframe=zinc_df)})
+excel_output['RFC'] = avg_rfc_preds
+matches = excel_output['Correlation'] == excel_output['RFC']
+true_count = matches.value_counts().loc[True]
+overlap_percentage = np.round(true_count / len(excel_output) * 100)
+print(f'Correlation vs RFC: Percentage of Matched Predictions = {overlap_percentage}%')
 
-zinc_df.to_csv('./analysis/V2_decision_tree_zinc_predictions.csv')
+# Save data
+rfc_out = pd.DataFrame(zip(list(shared_ligand_poses), avg_rfc_preds, avg_rfc_probs), columns=['ID', 'Prediction', 'Probability'])
+rfc_out.to_csv('analysis/zinc_filter_RFC_98-46.csv', index=False)
+

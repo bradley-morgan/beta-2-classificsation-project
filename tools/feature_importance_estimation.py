@@ -11,6 +11,7 @@ import shap
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+import joblib
 
 
 # TODO Run Feature Perm Importances for Training Data [x]
@@ -217,47 +218,82 @@ class FeatureImportances:
                 y = dataset[1]
                 x_data = self.data[x]
                 y_data = self.data[y]
-        
+
                 shap_vales = shap.TreeExplainer(model).shap_values(x_data)
+                shap_vales = shap_vales[1]
+                joblib.dump(shap_vales, f'./analysis/SHAPS/rfc_shaps_{x}.joblib')
+                joblib.dump(x_data, f'./analysis/SHAPS/rfc_data_{x}.joblib')
+                joblib.dump(y_data, f'./analysis/SHAPS/rfc_data_{y}.joblib')
+
+            joblib.dump(self.data['feature_names'], f'./analysis/SHAPS/feature_names.joblib')
+
+
+
                 # shap_vales = shap_vales[1]
-                correl = self.correlate_shaps(shap_vales, x_data ,y_data, self.data['feature_names'])
+                # correl = self.correlate_shaps(shap_vales, x_data ,y_data, self.data['feature_names'])
         
                 # m_tools.local_save_model(correl, 'd_tree_feature_imp.joblib', None, dir_path='./analysis')
-                correl.to_csv('./analysis/xgboost_feature_imp_agonist.csv')
+                # correl.to_csv('./analysis/xgboost_feature_imp_agonist.csv')
         
-                self.run.log({f'Feature Importance Correlation Table {x}': wandb.Table(dataframe=correl)})
+                # self.run.log({f'Feature Importance Correlation Table {x}': wandb.Table(dataframe=correl)})
 
-                self.image_saver.save_graphviz(
-                    model, self.data['feature_names'], ['ant', 'ag'], 'Tree Structure'
-                )
+                # self.image_saver.save_graphviz(
+                #     model, self.data['feature_names'], ['ant', 'ag'], 'Tree Structure'
+                # )
         
-                sns.set()
-                shap.summary_plot(
-                    shap_values=shap_vales,
-                    features=x_data,
-                    feature_names=self.data['feature_names'],
-                    show=False,
-                    plot_type='dot',
-                    max_display=10
-                )
-                plt.tight_layout()
-                self.image_saver.save(plot=plt.gcf(),
-                                      name=f'Local Feature Importance {x}', format='png')
-                plt.clf()
-        
-                shap.summary_plot(
-                    shap_vales,
-                    x_data,
-                    plot_type='bar',
-                    feature_names=self.data['feature_names'],
-                    show=False,
-                    max_display=10
-                )
-                self.image_saver.save(plot=plt.gcf(),
-                                      name=f'Global Feature Importance {x}', format='png')
-
-
-                progress_bar.update()
+                # sns.set()
+                # shap.summary_plot(
+                #     shap_values=shap_vales,
+                #     features=x_data,
+                #     feature_names=self.data['feature_names'],
+                #     show=False,
+                #     plot_type='dot',
+                #     max_display=10
+                # )
+                # plt.tight_layout()
+                # self.image_saver.save(plot=plt.gcf(),
+                #                       name=f'Local Feature Importance {x}', format='png')
+                # plt.clf()
+                #
+                # shap.summary_plot(
+                #     shap_vales,
+                #     x_data,
+                #     plot_type='bar',
+                #     feature_names=self.data['feature_names'],
+                #     show=False,
+                #     max_display=10
+                # )
+                # self.image_saver.save(plot=plt.gcf(),
+                #                       name=f'Global Feature Importance {x}', format='png')
+                # plt.clf()
+                #
+                #
+                # shap.summary_plot(
+                #     shap_values=shap_vales,
+                #     features=x_data,
+                #     feature_names=self.data['feature_names'],
+                #     show=False,
+                #     plot_type='dot',
+                #     max_display=20
+                # )
+                # plt.tight_layout()
+                # self.image_saver.save(plot=plt.gcf(),
+                #                       name=f'Local Feature Importance {x} Top 20', format='png')
+                # plt.clf()
+                #
+                # shap.summary_plot(
+                #     shap_vales,
+                #     x_data,
+                #     plot_type='bar',
+                #     feature_names=self.data['feature_names'],
+                #     show=False,
+                #     max_display=20
+                # )
+                # self.image_saver.save(plot=plt.gcf(),
+                #                       name=f'Global Feature Importance {x} Top 20', format='png')
+                #
+                #
+                # progress_bar.update()
         
                 # fig2 = shap.dependence_plot(
                 #     '193/CB - /1/C Hydrophobic',

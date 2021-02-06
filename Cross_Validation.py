@@ -1,6 +1,6 @@
 from tools.model_performance_estimation import CrossValidation
 from sklearn.tree import DecisionTreeClassifier
-from tools.DatasetCompiler import DatasetCompiler
+from tools.Data import Preprocess
 from tools import model_tools as m_tools
 import tools.cloud_tools as c_tools
 import matplotlib.pyplot as plt
@@ -31,7 +31,7 @@ def run_cross_validation():
     config = wandb.config
     image_saver = ImageSaver(run)
 
-    data = DatasetCompiler.load_from_local(config.src)
+    data = Preprocess.load_from_local(config.src)
 
     # ================================== Run Cross Validation =======================================
     results = CrossValidation(config.k_folds, config.n_repeats, data, make_model(config.model), config).run()

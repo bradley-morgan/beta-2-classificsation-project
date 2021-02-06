@@ -1,15 +1,11 @@
 from tools.DatasetCompiler import DatasetCompiler
-from transforms.merge_datasets import MergeDatasets
-from transforms.change_nans import ChangeNans
-from transforms.clean_feature_names import CleanFeatureNames
+from legacy.transforms.merge_datasets import MergeDatasets
+from legacy.transforms.change_nans import ChangeNans
+from legacy.transforms.clean_feature_names import CleanFeatureNames
 from tools.model_performance_estimation import CrossValidation
-from transforms.remove_features import RemoveFeatures
-from tools.make_models import xgboost_constructor
 from tools.anonymousClass import Obj
 import wandb
 import pandas as pd
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import matthews_corrcoef
 from tools.make_models import make_model, decision_tree_contrustor
 import tools.model_tools as m_tools
 from tools.ImageSaver import ImageSaver

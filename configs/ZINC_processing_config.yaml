@@ -1,0 +1,28 @@
+src: ./data/ZINC/filtered
+test_size: 0.02
+transform_src: transforms
+transforms:
+
+  clean_features:
+    exceptions:
+      - Action
+      - Ligand_Pose
+      - Ligand_Pose2
+
+  merge:
+    merge_all: True
+    merge_all_name: merged-data
+    groups:
+
+    group_names:
+
+
+  remove_features:
+    search_params:
+      - Clash
+      - Proximal
+      - Ligand_Pose
+      - Ligand_Pose2
+
+  change_nans:
+    value: 0
